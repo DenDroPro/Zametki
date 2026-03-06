@@ -1,6 +1,7 @@
 package com.zametki.ui
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.zametki.ZametkiApplication
@@ -10,6 +11,7 @@ import kotlinx.coroutines.launch
 
 class NoteViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = ZametkiApplication.database.noteDao()
+    private val prefs = application.getSharedPreferences("zametki_prefs", Context.MODE_PRIVATE)
 
     val allNotes: StateFlow<List<Note>> = dao.getAllNotes()
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
@@ -23,11 +25,27 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
     private val _currentNote = MutableStateFlow<Note?>(null)
     val currentNote: StateFlow<Note?> = _currentNote
 
-    private val _sortMode = MutableStateFlow(SortMode.UPDATED_DESC)
+    private val _sortMode = MutableStateFlow(
+        SortMode.entries.getOrNull(prefs.getInt("sort_mode", 0)) ?: SortMode.UPDATED_DESC
+    )
     val sortMode: StateFlow<SortMode> = _sortMode
 
-    private val _viewMode = MutableStateFlow(ViewMode.GRID_3)
+    private val _viewMode = MutableStateFlow(
+        ViewMode.entries.getOrNull(prefs.getInt("view_mode", 1)) ?: ViewMode.GRID_3
+    )
     val viewMode: StateFlow<ViewMode> = _viewMode
+
+    // Default settings persisted in SharedPreferences
+    private val _defaultFontSize = MutableStateFlow(prefs.getInt("default_font_size", 16))
+    val defaultFontSize: StateFlow<Int> = _defaultFontSize
+
+    private val _defaultSheetColor = MutableStateFlow(
+        SheetColor.entries.getOrNull(prefs.getInt("default_sheet_color", 0)) ?: SheetColor.WHITE
+    )
+    val defaultSheetColor: StateFlow<SheetColor> = _defaultSheetColor
+
+    private val _defaultLineOpacity = MutableStateFlow(prefs.getFloat("default_line_opacity", 0.5f))
+    val defaultLineOpacity: StateFlow<Float> = _defaultLineOpacity
 
     fun loadNote(id: Long) {
         viewModelScope.launch {
@@ -37,7 +55,12 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
 
     fun createNote(title: String = "", onCreated: (Long) -> Unit = {}) {
         viewModelScope.launch {
-            val id = dao.insert(Note(title = title.ifBlank { "" }))
+            val id = dao.insert(Note(
+                title = title.ifBlank { "" },
+                sheetColor = _defaultSheetColor.value,
+                fontSize = _defaultFontSize.value,
+                lineOpacity = _defaultLineOpacity.value
+            ))
             onCreated(id)
         }
     }
@@ -67,8 +90,30 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
     fun changeColor(id: Long, color: SheetColor) { viewModelScope.launch { dao.changeColor(id, color) } }
     fun emptyTrash() { viewModelScope.launch { dao.emptyTrash() } }
 
-    fun setSortMode(mode: SortMode) { _sortMode.value = mode }
-    fun setViewMode(mode: ViewMode) { _viewMode.value = mode }
+    fun setSortMode(mode: SortMode) {
+        _sortMode.value = mode
+        prefs.edit().putInt("sort_mode", mode.ordinal).apply()
+    }
+
+    fun setViewMode(mode: ViewMode) {
+        _viewMode.value = mode
+        prefs.edit().putInt("view_mode", mode.ordinal).apply()
+    }
+
+    fun setDefaultFontSize(size: Int) {
+        _defaultFontSize.value = size
+        prefs.edit().putInt("default_font_size", size).apply()
+    }
+
+    fun setDefaultSheetColor(color: SheetColor) {
+        _defaultSheetColor.value = color
+        prefs.edit().putInt("default_sheet_color", color.ordinal).apply()
+    }
+
+    fun setDefaultLineOpacity(opacity: Float) {
+        _defaultLineOpacity.value = opacity
+        prefs.edit().putFloat("default_line_opacity", opacity).apply()
+    }
 
     fun sortNotes(notes: List<Note>, mode: SortMode): List<Note> {
         val pinned = notes.filter { it.isPinned }

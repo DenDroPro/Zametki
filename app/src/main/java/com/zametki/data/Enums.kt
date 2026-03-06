@@ -3,34 +3,23 @@ package com.zametki.data
 import androidx.compose.ui.graphics.Color
 
 enum class SheetColor(val color: Color, val label: String) {
-    // Default
+    // Light pastel (6)
     WHITE(Color(0xFFFFFDF5), "Белый"),
-    // Pastel (10)
-    PASTEL_PINK(Color(0xFFFFF0F5), "Розовый"),
-    PASTEL_PEACH(Color(0xFFFFF5EE), "Персиковый"),
-    PASTEL_YELLOW(Color(0xFFFFFDE7), "Жёлтый"),
-    PASTEL_MINT(Color(0xFFF0FFF0), "Мятный"),
-    PASTEL_BLUE(Color(0xFFF0F8FF), "Голубой"),
-    PASTEL_LAVENDER(Color(0xFFF5F0FF), "Лавандовый"),
-    PASTEL_CREAM(Color(0xFFFFFDD0), "Кремовый"),
-    PASTEL_SAGE(Color(0xFFE8F5E9), "Шалфей"),
-    PASTEL_SKY(Color(0xFFE1F5FE), "Небесный"),
-    PASTEL_CORAL(Color(0xFFFFE4E1), "Коралловый"),
-    // Vibrant (10)
-    VIBRANT_RED(Color(0xFFEF5350), "Красный"),
-    VIBRANT_ORANGE(Color(0xFFFF7043), "Оранжевый"),
-    VIBRANT_YELLOW(Color(0xFFFFEE58), "Жёлтый"),
-    VIBRANT_GREEN(Color(0xFF66BB6A), "Зелёный"),
-    VIBRANT_TEAL(Color(0xFF26A69A), "Бирюзовый"),
-    VIBRANT_BLUE(Color(0xFF42A5F5), "Синий"),
-    VIBRANT_INDIGO(Color(0xFF5C6BC0), "Индиго"),
-    VIBRANT_PURPLE(Color(0xFFAB47BC), "Фиолетовый"),
-    VIBRANT_PINK(Color(0xFFEC407A), "Розовый"),
-    VIBRANT_BROWN(Color(0xFF8D6E63), "Коричневый");
+    LIGHT_YELLOW(Color(0xFFFFF9C4), "Жёлтый"),
+    LIGHT_PINK(Color(0xFFFFE4EC), "Розовый"),
+    LIGHT_MINT(Color(0xFFE0F7E9), "Мятный"),
+    LIGHT_BLUE(Color(0xFFE3F2FD), "Голубой"),
+    LIGHT_LAVENDER(Color(0xFFEDE7F6), "Лавандовый"),
+    // Slightly brighter pastel (6)
+    WARM_CREAM(Color(0xFFF5E6CA), "Кремовый"),
+    WARM_PEACH(Color(0xFFFFCCBC), "Персиковый"),
+    WARM_SAGE(Color(0xFFC8E6C9), "Шалфей"),
+    WARM_SKY(Color(0xFFB3E5FC), "Небесный"),
+    WARM_CORAL(Color(0xFFFFAB91), "Коралловый"),
+    WARM_LILAC(Color(0xFFD1C4E9), "Сиреневый");
 
-    val isDark: Boolean get() = name.startsWith("VIBRANT")
-    val textColor: Color get() = if (isDark) Color.White else Color(0xFF333333)
-    val lineColor: Color get() = if (isDark) Color.White.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.15f)
+    val textColor: Color get() = Color(0xFF333333)
+    val lineColor: Color get() = Color(0xFF8B7355).copy(alpha = 0.2f)
 }
 
 enum class SortMode(val label: String) {
@@ -43,8 +32,12 @@ enum class SortMode(val label: String) {
     COLOR("По цвету")
 }
 
-enum class ViewMode(val label: String) {
-    LIST("Список"),
-    GRID_3("Сетка 3"),
-    GRID_4("Сетка 4")
+enum class ViewMode {
+    LIST, GRID_3, GRID_4;
+
+    fun next(): ViewMode = when (this) {
+        LIST -> GRID_3
+        GRID_3 -> GRID_4
+        GRID_4 -> LIST
+    }
 }

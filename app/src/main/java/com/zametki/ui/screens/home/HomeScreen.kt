@@ -56,7 +56,6 @@ fun HomeScreen(
     var showSearch by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var showSortMenu by remember { mutableStateOf(false) }
-    var showViewMenu by remember { mutableStateOf(false) }
     var showContextMenu by remember { mutableStateOf<Note?>(null) }
 
     val filtered = remember(sorted, searchQuery) {
@@ -118,15 +117,14 @@ fun HomeScreen(
                             IconButton(onClick = { showSearch = true }) {
                                 Icon(Icons.Default.Search, null, tint = Color.White)
                             }
-                            Box {
-                                IconButton(onClick = { showViewMenu = true }) {
-                                    Icon(if (viewMode == ViewMode.LIST) Icons.Default.ViewList else Icons.Default.GridView, null, tint = Color.White)
-                                }
-                                DropdownMenu(expanded = showViewMenu, onDismissRequest = { showViewMenu = false }) {
-                                    ViewMode.entries.forEach { m ->
-                                        DropdownMenuItem(text = { Text(m.label) }, onClick = { viewModel.setViewMode(m); showViewMenu = false })
-                                    }
-                                }
+                            IconButton(onClick = { viewModel.setViewMode(viewMode.next()) }) {
+                                Icon(
+                                    when (viewMode) {
+                                        ViewMode.LIST -> Icons.Default.ViewList
+                                        ViewMode.GRID_3 -> Icons.Default.GridView
+                                        ViewMode.GRID_4 -> Icons.Default.Apps
+                                    }, null, tint = Color.White
+                                )
                             }
                             Box {
                                 IconButton(onClick = { showSortMenu = true }) {

@@ -1,5 +1,6 @@
 package com.zametki.ui.components
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -12,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -26,6 +28,7 @@ import java.util.*
 fun NoteCard(note: Note, onClick: () -> Unit, onLongClick: () -> Unit) {
     val bgColor = note.sheetColor.color
     val textColor = note.sheetColor.textColor
+    val lineColor = note.sheetColor.lineColor
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -36,8 +39,21 @@ fun NoteCard(note: Note, onClick: () -> Unit, onLongClick: () -> Unit) {
         colors = CardDefaults.cardColors(containerColor = bgColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Box(modifier = Modifier.fillMaxSize().padding(10.dp)) {
-            Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Faint lined paper background
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val lineSpacing = 18.dp.toPx()
+                val titleAreaH = 38.dp.toPx()
+                // Faint content lines
+                var y = titleAreaH + lineSpacing
+                while (y < size.height) {
+                    drawLine(lineColor.copy(alpha = 0.15f), Offset(8.dp.toPx(), y), Offset(size.width - 8.dp.toPx(), y), strokeWidth = 0.5.dp.toPx())
+                    y += lineSpacing
+                }
+                // Title separator — more visible
+                drawLine(lineColor.copy(alpha = 0.4f), Offset(8.dp.toPx(), titleAreaH), Offset(size.width - 8.dp.toPx(), titleAreaH), strokeWidth = 0.8.dp.toPx())
+            }
+            Column(modifier = Modifier.fillMaxSize().padding(10.dp)) {
                 // Title
                 Text(
                     text = note.title.ifBlank { "Без заголовка" },
@@ -47,7 +63,7 @@ fun NoteCard(note: Note, onClick: () -> Unit, onLongClick: () -> Unit) {
                     overflow = TextOverflow.Ellipsis,
                     color = textColor
                 )
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(6.dp))
                 // Preview text
                 Text(
                     text = note.preview.ifBlank { "" },
@@ -60,7 +76,7 @@ fun NoteCard(note: Note, onClick: () -> Unit, onLongClick: () -> Unit) {
             }
             // Bottom row: date + icons
             Row(
-                modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth(),
+                modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {

@@ -1,7 +1,12 @@
 package com.zametki.ui.screens.settings
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -9,11 +14,13 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.zametki.data.SheetColor
 import com.zametki.data.SortMode
 import com.zametki.data.ViewMode
 import com.zametki.ui.NoteViewModel
@@ -26,10 +33,12 @@ import com.zametki.ui.components.DarkSurface
 @Composable
 fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
     val sortMode by viewModel.sortMode.collectAsState()
-    val viewMode by viewModel.viewMode.collectAsState()
+    val defaultFontSize by viewModel.defaultFontSize.collectAsState()
+    val defaultSheetColor by viewModel.defaultSheetColor.collectAsState()
+    val defaultLineOpacity by viewModel.defaultLineOpacity.collectAsState()
     var showSortDialog by remember { mutableStateOf(false) }
-    var showViewDialog by remember { mutableStateOf(false) }
     var showClearTrash by remember { mutableStateOf(false) }
+    var showColorPicker by remember { mutableStateOf(false) }
 
     Scaffold(
         topBar = {
@@ -42,11 +51,57 @@ fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
         containerColor = DarkBg
     ) { padding ->
         Column(Modifier.fillMaxSize().padding(padding).verticalScroll(rememberScrollState())) {
+            SectionTitle("По умолчанию для новых заметок")
+
+            // Default font size
+            Surface(color = Color.Transparent) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.FormatSize, null, tint = Accent, modifier = Modifier.size(24.dp))
+                    Spacer(Modifier.width(16.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Размер шрифта", fontSize = 16.sp, color = Color(0xFFDDDDDD))
+                        Text("$defaultFontSize", fontSize = 13.sp, color = Color(0xFF888888))
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = { if (defaultFontSize > 10) viewModel.setDefaultFontSize(defaultFontSize - 1) }) {
+                            Text("—", fontSize = 18.sp, color = Color(0xFFBBBBBB))
+                        }
+                        Text("$defaultFontSize", fontSize = 16.sp, color = Color.White, modifier = Modifier.width(30.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        IconButton(onClick = { if (defaultFontSize < 30) viewModel.setDefaultFontSize(defaultFontSize + 1) }) {
+                            Text("+", fontSize = 18.sp, color = Color(0xFFBBBBBB))
+                        }
+                    }
+                }
+            }
+
+            // Default sheet color
+            SettingsRow(Icons.Default.Palette, "Цвет бумаги", defaultSheetColor.label) { showColorPicker = true }
+
+            // Default line opacity
+            Surface(color = Color.Transparent) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.LinearScale, null, tint = Accent, modifier = Modifier.size(24.dp))
+                    Spacer(Modifier.width(16.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Яркость линий", fontSize = 16.sp, color = Color(0xFFDDDDDD))
+                        Text("${(defaultLineOpacity * 100).toInt()}%", fontSize = 13.sp, color = Color(0xFF888888))
+                    }
+                }
+            }
+            Slider(
+                value = defaultLineOpacity,
+                onValueChange = { viewModel.setDefaultLineOpacity(it) },
+                valueRange = 0f..1f,
+                modifier = Modifier.padding(horizontal = 56.dp),
+                colors = SliderDefaults.colors(thumbColor = Accent, activeTrackColor = Accent)
+            )
+
             SectionTitle("Заметки")
             SettingsRow(Icons.Default.Sort, "Сортировка", sortMode.label) { showSortDialog = true }
-            SettingsRow(Icons.Default.ViewModule, "Вид", viewMode.label) { showViewDialog = true }
+
             SectionTitle("Данные")
             SettingsRow(Icons.Default.DeleteSweep, "Очистить корзину", "Удалить все из корзины", isDestructive = true) { showClearTrash = true }
+
             SectionTitle("О приложении")
             SettingsRow(Icons.Default.Info, "Версия", "1.0") {}
             Spacer(Modifier.height(32.dp))
@@ -63,16 +118,31 @@ fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
             } }
         }, confirmButton = {})
     }
-    if (showViewDialog) {
-        AlertDialog(onDismissRequest = { showViewDialog = false }, title = { Text("Вид") }, text = {
-            Column { ViewMode.entries.forEach { m ->
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                    RadioButton(m == viewMode, { viewModel.setViewMode(m); showViewDialog = false })
-                    Spacer(Modifier.width(8.dp)); Text(m.label)
+
+    if (showColorPicker) {
+        AlertDialog(
+            onDismissRequest = { showColorPicker = false },
+            title = { Text("Цвет бумаги по умолчанию") },
+            text = {
+                Column {
+                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SheetColor.entries.forEach { c ->
+                            Box(
+                                Modifier.size(40.dp).clip(CircleShape).background(c.color)
+                                    .then(if (c == defaultSheetColor) Modifier.border(2.dp, Accent, CircleShape) else Modifier)
+                                    .clickable { viewModel.setDefaultSheetColor(c); showColorPicker = false },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (c == defaultSheetColor) Icon(Icons.Default.Check, null, tint = c.textColor, modifier = Modifier.size(18.dp))
+                            }
+                        }
+                    }
                 }
-            } }
-        }, confirmButton = {})
+            },
+            confirmButton = { TextButton(onClick = { showColorPicker = false }) { Text("Закрыть") } }
+        )
     }
+
     if (showClearTrash) {
         AlertDialog(onDismissRequest = { showClearTrash = false },
             title = { Text("Очистить корзину?") },

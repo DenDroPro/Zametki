@@ -1,6 +1,7 @@
 package com.zametki.ui.screens.editor
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -388,29 +389,15 @@ fun EditorScreen(
             onDismissRequest = { showColorSheet = false },
             title = { Text("Цвет листа") },
             text = {
-                Column {
-                    Text("Пастельные", fontSize = 12.sp, color = Color(0xFF888888))
-                    Spacer(Modifier.height(4.dp))
-                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        (listOf(SheetColor.WHITE) + SheetColor.entries.filter { it.name.startsWith("PASTEL") }).forEach { c ->
-                            Box(Modifier.size(40.dp).clip(CircleShape).background(c.color).then(
-                                if (c == sheetColor) Modifier.background(Color.Transparent) else Modifier
-                            )) {
-                                IconButton(onClick = { sheetColor = c; showColorSheet = false }) {
-                                    if (c == sheetColor) Icon(Icons.Default.Check, null, tint = c.textColor, modifier = Modifier.size(18.dp))
-                                }
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Text("Яркие", fontSize = 12.sp, color = Color(0xFF888888))
-                    Spacer(Modifier.height(4.dp))
-                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SheetColor.entries.filter { it.name.startsWith("VIBRANT") }.forEach { c ->
-                            Box(Modifier.size(40.dp).clip(CircleShape).background(c.color)) {
-                                IconButton(onClick = { sheetColor = c; showColorSheet = false }) {
-                                    if (c == sheetColor) Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                                }
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SheetColor.entries.forEach { c ->
+                        Box(
+                            Modifier.size(40.dp).clip(CircleShape).background(c.color)
+                                .then(if (c == sheetColor) Modifier.border(2.dp, Accent, CircleShape) else Modifier),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            IconButton(onClick = { sheetColor = c; showColorSheet = false }) {
+                                if (c == sheetColor) Icon(Icons.Default.Check, null, tint = c.textColor, modifier = Modifier.size(18.dp))
                             }
                         }
                     }
