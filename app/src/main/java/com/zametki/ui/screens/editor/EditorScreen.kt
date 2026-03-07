@@ -195,27 +195,45 @@ fun EditorScreen(
                 actions = {
                     IconButton(onClick = { undo() }) { Icon(Icons.Default.Undo, null, tint = Color.White.copy(alpha = if (undoStack.isNotEmpty()) 1f else 0.3f)) }
                     IconButton(onClick = { redo() }) { Icon(Icons.Default.Redo, null, tint = Color.White.copy(alpha = if (redoStack.isNotEmpty()) 1f else 0.3f)) }
+                    // YD button — same code as HomeScreen selection mode
                     IconButton(onClick = {
                         try {
-                            // Try deep link to files tab first
-                            val filesIntent = Intent(Intent.ACTION_VIEW, Uri.parse("yandexdisk:///disk/")).apply {
+                            val name = titleText.ifBlank { "Без названия" }.replace(Regex("[/\\\\:*?\"<>|]"), "_")
+                            val cacheDir = File(context.cacheDir, "shared_notes")
+                            cacheDir.mkdirs()
+                            val file = File(cacheDir, "$name.txt")
+                            file.writeText(contentValue.text)
+                            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                            val uris = ArrayList<Uri>()
+                            uris.add(uri)
+                            val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                                type = "text/plain"
+                                putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 setPackage("ru.yandex.disk")
                             }
-                            try {
-                                context.startActivity(filesIntent)
-                            } catch (_: Exception) {
-                                // Fallback: open YD app normally
-                                val launchIntent = context.packageManager.getLaunchIntentForPackage("ru.yandex.disk")
-                                if (launchIntent != null) {
-                                    context.startActivity(launchIntent)
-                                } else {
-                                    Toast.makeText(context, "Яндекс Диск не установлен", Toast.LENGTH_SHORT).show()
-                                }
-                            }
+                            context.startActivity(intent)
                         } catch (e: Exception) {
-                            Toast.makeText(context, "Не удалось открыть Яндекс Диск", Toast.LENGTH_SHORT).show()
+                            try {
+                                val name = titleText.ifBlank { "Без названия" }.replace(Regex("[/\\\\:*?\"<>|]"), "_")
+                                val cacheDir = File(context.cacheDir, "shared_notes")
+                                cacheDir.mkdirs()
+                                val file = File(cacheDir, "$name.txt")
+                                file.writeText(contentValue.text)
+                                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                                val uris = ArrayList<Uri>()
+                                uris.add(uri)
+                                val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                                    type = "text/plain"
+                                    putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(Intent.createChooser(intent, "Поделиться"))
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "Не удалось поделиться", Toast.LENGTH_SHORT).show()
+                            }
                         }
-                    }) { Icon(painterResource(R.drawable.ic_yandex_disk), contentDescription = "Яндекс Диск", tint = Color.Unspecified, modifier = Modifier.size(24.dp)) }
+                    }) { Icon(painterResource(R.drawable.ic_yandex_disk), null, tint = Color.Unspecified, modifier = Modifier.size(24.dp)) }
                     IconButton(onClick = {
                         val intent = Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_SUBJECT, titleText); putExtra(Intent.EXTRA_TEXT, contentValue.text) }
                         context.startActivity(Intent.createChooser(intent, "Поделиться"))

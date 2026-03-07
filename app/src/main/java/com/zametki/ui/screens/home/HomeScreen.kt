@@ -327,13 +327,15 @@ fun HomeScreen(
                     ViewMode.LIST -> LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(filtered, key = { it.id }) { note ->
                             val isSelected = note.id in selectedIds
-                            Box {
-                                NoteListItem(note, onClick = { onNoteClick(note) }, onLongClick = { onNoteLongClick(note) })
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Box(modifier = Modifier.weight(1f)) {
+                                    NoteListItem(note, onClick = { onNoteClick(note) }, onLongClick = { onNoteLongClick(note) })
+                                }
                                 if (selectionMode) {
                                     Checkbox(
                                         checked = isSelected,
                                         onCheckedChange = { onNoteClick(note) },
-                                        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 4.dp, bottom = 4.dp),
+                                        modifier = Modifier.padding(start = 4.dp),
                                         colors = CheckboxDefaults.colors(checkedColor = Accent, uncheckedColor = Color(0xFF888888))
                                     )
                                 }
@@ -352,7 +354,7 @@ fun HomeScreen(
                                         Checkbox(
                                             checked = isSelected,
                                             onCheckedChange = { onNoteClick(note) },
-                                            modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 2.dp),
+                                            modifier = Modifier.align(Alignment.TopEnd).padding(top = 2.dp, end = 0.dp).size(32.dp),
                                             colors = CheckboxDefaults.colors(checkedColor = Accent, uncheckedColor = Color(0xFF888888))
                                         )
                                     }
