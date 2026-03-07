@@ -183,7 +183,8 @@ fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
             SettingsRow(Icons.Default.DeleteSweep, "Очистить корзину", "Удалить все из корзины", isDestructive = true) { showClearTrash = true }
 
             SectionTitle("О приложении")
-            SettingsRow(Icons.Default.Info, "Версия", "1.0") {}
+            SettingsRow(Icons.Default.Info, "Версия", "0.0.1") {}
+            SettingsRow(Icons.Default.Person, "Разработчик", "DenDro") {}
             Spacer(Modifier.height(32.dp))
         }
     }
