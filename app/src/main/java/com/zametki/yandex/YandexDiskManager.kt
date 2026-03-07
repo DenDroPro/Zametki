@@ -14,7 +14,7 @@ import java.net.URL
 object YandexDiskManager {
 
     // TODO: Replace with your Yandex OAuth Client ID
-    const val CLIENT_ID = ""
+    const val CLIENT_ID = "112c2818143043b59937d5b1f5cc107f"
 
     private const val PREFS_NAME = "yandex_disk_prefs"
     private const val KEY_TOKEN = "access_token"
