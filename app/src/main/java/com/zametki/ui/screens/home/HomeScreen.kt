@@ -1,12 +1,18 @@
 package com.zametki.ui.screens.home
 
 import android.content.Intent
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -14,6 +20,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -57,10 +64,18 @@ fun HomeScreen(
     var searchQuery by remember { mutableStateOf("") }
     var showSortMenu by remember { mutableStateOf(false) }
     var showContextMenu by remember { mutableStateOf<Note?>(null) }
+    var colorFilter by remember { mutableStateOf<SheetColor?>(null) }
 
-    val filtered = remember(sorted, searchQuery) {
-        if (searchQuery.isBlank()) sorted
-        else sorted.filter { it.title.contains(searchQuery, true) || it.content.contains(searchQuery, true) }
+    // Distinct colors that actually exist in notes
+    val existingColors = remember(notes) {
+        notes.map { it.sheetColor }.distinct().sortedBy { it.ordinal }
+    }
+
+    val filtered = remember(sorted, searchQuery, colorFilter) {
+        var result = sorted
+        if (searchQuery.isNotBlank()) result = result.filter { it.title.contains(searchQuery, true) || it.content.contains(searchQuery, true) }
+        if (colorFilter != null) result = result.filter { it.sheetColor == colorFilter }
+        result
     }
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
@@ -121,8 +136,8 @@ fun HomeScreen(
                                 Icon(
                                     when (viewMode) {
                                         ViewMode.LIST -> Icons.Default.ViewList
-                                        ViewMode.GRID_3 -> Icons.Default.GridView
-                                        ViewMode.GRID_4 -> Icons.Default.Apps
+                                        ViewMode.GRID_2 -> Icons.Default.GridView
+                                        ViewMode.GRID_3 -> Icons.Default.Apps
                                     }, null, tint = Color.White
                                 )
                             }
@@ -151,6 +166,36 @@ fun HomeScreen(
                     ) { Icon(Icons.Default.Add, "Новая заметка") }
                 }
             },
+            bottomBar = {
+                if (existingColors.size > 1) {
+                    Surface(color = Color(0xFF2A2A2A), tonalElevation = 4.dp) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            // "All" chip
+                            Box(
+                                Modifier.size(28.dp).clip(CircleShape)
+                                    .background(if (colorFilter == null) Accent else Color(0xFF555555))
+                                    .clickable { colorFilter = null },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(Icons.Default.Circle, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                            }
+                            existingColors.forEach { c ->
+                                Box(
+                                    Modifier.size(28.dp).clip(CircleShape)
+                                        .background(c.color)
+                                        .then(if (c == colorFilter) Modifier.border(2.dp, Accent, CircleShape) else Modifier.border(1.dp, Color(0xFF555555), CircleShape))
+                                        .clickable { colorFilter = if (colorFilter == c) null else c }
+                                )
+                            }
+                        }
+                    }
+                }
+            },
             containerColor = DarkBg
         ) { padding ->
             if (filtered.isEmpty()) {
@@ -169,7 +214,7 @@ fun HomeScreen(
                         }
                     }
                     else -> {
-                        val cols = if (viewMode == ViewMode.GRID_3) 3 else 4
+                        val cols = if (viewMode == ViewMode.GRID_2) 2 else 3
                         LazyVerticalGrid(GridCells.Fixed(cols), Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(8.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(filtered, key = { it.id }) { note ->

@@ -59,7 +59,7 @@ fun NoteCard(note: Note, onClick: () -> Unit, onLongClick: () -> Unit) {
                     text = note.title.ifBlank { "Без заголовка" },
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     color = textColor
                 )

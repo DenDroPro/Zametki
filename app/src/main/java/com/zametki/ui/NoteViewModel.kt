@@ -31,7 +31,7 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
     val sortMode: StateFlow<SortMode> = _sortMode
 
     private val _viewMode = MutableStateFlow(
-        ViewMode.entries.getOrNull(prefs.getInt("view_mode", 1)) ?: ViewMode.GRID_3
+        ViewMode.entries.getOrNull(prefs.getInt("view_mode", 1)) ?: ViewMode.GRID_2
     )
     val viewMode: StateFlow<ViewMode> = _viewMode
 

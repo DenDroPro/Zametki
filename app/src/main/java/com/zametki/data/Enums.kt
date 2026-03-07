@@ -3,19 +3,19 @@ package com.zametki.data
 import androidx.compose.ui.graphics.Color
 
 enum class SheetColor(val color: Color, val label: String) {
-    // Light pastel (6)
+    // White
     WHITE(Color(0xFFFFFDF5), "Белый"),
-    LIGHT_YELLOW(Color(0xFFFFF9C4), "Жёлтый"),
+    // Rainbow: red → orange → yellow → green → blue → violet + variations
     LIGHT_PINK(Color(0xFFFFE4EC), "Розовый"),
+    WARM_CORAL(Color(0xFFFFAB91), "Коралловый"),
+    WARM_PEACH(Color(0xFFFFCCBC), "Персиковый"),
+    WARM_CREAM(Color(0xFFF5E6CA), "Кремовый"),
+    LIGHT_YELLOW(Color(0xFFFFF9C4), "Жёлтый"),
+    WARM_SAGE(Color(0xFFC8E6C9), "Шалфей"),
     LIGHT_MINT(Color(0xFFE0F7E9), "Мятный"),
+    WARM_SKY(Color(0xFFB3E5FC), "Небесный"),
     LIGHT_BLUE(Color(0xFFE3F2FD), "Голубой"),
     LIGHT_LAVENDER(Color(0xFFEDE7F6), "Лавандовый"),
-    // Slightly brighter pastel (6)
-    WARM_CREAM(Color(0xFFF5E6CA), "Кремовый"),
-    WARM_PEACH(Color(0xFFFFCCBC), "Персиковый"),
-    WARM_SAGE(Color(0xFFC8E6C9), "Шалфей"),
-    WARM_SKY(Color(0xFFB3E5FC), "Небесный"),
-    WARM_CORAL(Color(0xFFFFAB91), "Коралловый"),
     WARM_LILAC(Color(0xFFD1C4E9), "Сиреневый");
 
     val textColor: Color get() = Color(0xFF333333)
@@ -33,11 +33,11 @@ enum class SortMode(val label: String) {
 }
 
 enum class ViewMode {
-    LIST, GRID_3, GRID_4;
+    LIST, GRID_2, GRID_3;
 
     fun next(): ViewMode = when (this) {
-        LIST -> GRID_3
-        GRID_3 -> GRID_4
-        GRID_4 -> LIST
+        LIST -> GRID_2
+        GRID_2 -> GRID_3
+        GRID_3 -> LIST
     }
 }

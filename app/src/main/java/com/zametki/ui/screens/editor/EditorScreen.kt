@@ -33,6 +33,7 @@ import android.text.style.StyleSpan
 import android.text.style.UnderlineSpan
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.View
 import android.widget.EditText
 import com.zametki.data.*
 import com.zametki.ui.NoteViewModel
@@ -40,6 +41,7 @@ import com.zametki.ui.components.Accent
 import com.zametki.ui.components.BrownHeader
 import com.zametki.ui.components.DarkBg
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -173,6 +175,9 @@ fun EditorScreen(
     val textColorArgb = sheetColor.textColor.toArgb()
     val lineColorArgb = sheetColor.lineColor.toArgb()
 
+    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -232,7 +237,7 @@ fun EditorScreen(
         },
         containerColor = DarkBg
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).background(sheetBg).verticalScroll(rememberScrollState())) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding).background(sheetBg).verticalScroll(scrollState)) {
             // Title
             val titleColor = sheetColor.textColor
             androidx.compose.foundation.text.BasicTextField(
@@ -294,6 +299,21 @@ fun EditorScreen(
                             if (!isUpdatingFromCompose) {
                                 val t = text?.toString() ?: ""
                                 contentValue = TextFieldValue(t, TextRange(selStart.coerceIn(0, t.length), selEnd.coerceIn(0, t.length)))
+                            }
+                            // Request scroll to cursor position
+                            post {
+                                val layout = layout ?: return@post
+                                val len = text?.length ?: 0
+                                val safeSel = selStart.coerceIn(0, len)
+                                val line = layout.getLineForOffset(safeSel)
+                                val lineBottom = layout.getLineBottom(line)
+                                val absY = top + lineBottom
+                                coroutineScope.launch {
+                                    val target = (absY - 300).coerceAtLeast(0)
+                                    if (target > scrollState.value) {
+                                        scrollState.animateScrollTo(target)
+                                    }
+                                }
                             }
                         }
                     }.apply {
