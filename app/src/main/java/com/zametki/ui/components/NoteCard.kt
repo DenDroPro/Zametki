@@ -64,29 +64,30 @@ fun NoteCard(note: Note, onClick: () -> Unit, onLongClick: () -> Unit) {
                     color = textColor
                 )
                 Spacer(Modifier.height(6.dp))
-                // Preview text
+                // Preview text — limited lines so date stays visible
                 Text(
                     text = note.preview.ifBlank { "" },
                     fontSize = 10.sp,
-                    maxLines = 8,
+                    maxLines = 6,
                     overflow = TextOverflow.Ellipsis,
                     color = textColor.copy(alpha = 0.7f),
-                    lineHeight = 14.sp
+                    lineHeight = 14.sp,
+                    modifier = Modifier.weight(1f, fill = true)
                 )
-            }
-            // Bottom row: date + icons
-            Row(
-                modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth().padding(10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    SimpleDateFormat("dd.MM.yy", Locale.getDefault()).format(Date(note.updatedAt)),
-                    fontSize = 9.sp, color = textColor.copy(alpha = 0.5f)
-                )
-                Row {
-                    if (note.isPinned) Icon(Icons.Default.PushPin, null, tint = textColor.copy(alpha = 0.5f), modifier = Modifier.size(12.dp))
-                    if (note.isFavorite) Icon(Icons.Default.Favorite, null, tint = Color(0xFFE91E63).copy(alpha = 0.7f), modifier = Modifier.size(12.dp))
+                // Bottom row: date + icons — always at bottom
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        SimpleDateFormat("dd.MM.yy", Locale.getDefault()).format(Date(note.updatedAt)),
+                        fontSize = 9.sp, color = textColor.copy(alpha = 0.5f)
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        if (note.isPinned) Icon(Icons.Default.PushPin, null, tint = textColor.copy(alpha = 0.5f), modifier = Modifier.size(12.dp))
+                        if (note.isFavorite) Icon(Icons.Default.Favorite, null, tint = Color(0xFFE91E63).copy(alpha = 0.7f), modifier = Modifier.size(12.dp))
+                    }
                 }
             }
         }

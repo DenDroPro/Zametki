@@ -228,6 +228,15 @@ fun HomeScreen(
                             IconButton(onClick = { showSearch = true }) {
                                 Icon(Icons.Default.Search, null, tint = Color.White)
                             }
+                            // Select files button
+                            IconButton(onClick = {
+                                if (!selectionMode) {
+                                    selectionMode = true
+                                    selectedIds.clear()
+                                }
+                            }) {
+                                Icon(Icons.Default.CheckBox, null, tint = Color.White)
+                            }
                             IconButton(onClick = { viewModel.setViewMode(viewMode.next()) }) {
                                 Icon(
                                     when (viewMode) {
@@ -356,25 +365,27 @@ fun HomeScreen(
         }
     }
 
-    // Context menu
+    // Context menu — light theme
     showContextMenu?.let { note ->
         AlertDialog(
             onDismissRequest = { showContextMenu = null },
-            title = { Text(note.title.ifBlank { "Без заголовка" }, maxLines = 1) },
+            containerColor = Color(0xFFF5F5F5),
+            titleContentColor = Color(0xFF333333),
+            title = { Text(note.title.ifBlank { "Без заголовка" }, maxLines = 1, fontWeight = FontWeight.Bold) },
             text = {
                 Column {
                     if (listType == NoteListType.TRASH) {
-                        TextButton(onClick = { viewModel.restore(note.id); showContextMenu = null }) { Text("Восстановить") }
+                        TextButton(onClick = { viewModel.restore(note.id); showContextMenu = null }) { Text("Восстановить", color = Color(0xFF333333)) }
                         TextButton(onClick = { viewModel.permanentlyDelete(note); showContextMenu = null }) { Text("Удалить навсегда", color = Color.Red) }
                     } else {
-                        TextButton(onClick = { showContextMenu = null; onNavigateToEditor(note.id) }) { Text("Открыть") }
+                        TextButton(onClick = { showContextMenu = null; onNavigateToEditor(note.id) }) { Text("Открыть", color = Color(0xFF333333)) }
                         TextButton(onClick = { viewModel.toggleFavorite(note.id); showContextMenu = null }) {
-                            Text(if (note.isFavorite) "Убрать из избранного" else "В избранное")
+                            Text(if (note.isFavorite) "Убрать из избранного" else "В избранное", color = Color(0xFF333333))
                         }
                         TextButton(onClick = { viewModel.togglePin(note.id); showContextMenu = null }) {
-                            Text(if (note.isPinned) "Открепить" else "Закрепить")
+                            Text(if (note.isPinned) "Открепить" else "Закрепить", color = Color(0xFF333333))
                         }
-                        TextButton(onClick = { viewModel.duplicateNote(note); showContextMenu = null }) { Text("Создать копию") }
+                        TextButton(onClick = { viewModel.duplicateNote(note); showContextMenu = null }) { Text("Создать копию", color = Color(0xFF333333)) }
                         TextButton(onClick = {
                             val intent = Intent(Intent.ACTION_SEND).apply {
                                 type = "text/plain"
@@ -383,25 +394,27 @@ fun HomeScreen(
                             }
                             context.startActivity(Intent.createChooser(intent, "Поделиться"))
                             showContextMenu = null
-                        }) { Text("Поделиться") }
+                        }) { Text("Поделиться", color = Color(0xFF333333)) }
                         TextButton(onClick = {
                             showContextMenu = null
                             selectionMode = true
                             selectedIds.clear()
                             selectedIds.add(note.id)
-                        }) { Text("Выделить") }
+                        }) { Text("Выделить", color = Color(0xFF333333)) }
                         TextButton(onClick = { viewModel.softDelete(note.id); showContextMenu = null }) { Text("Удалить", color = Color.Red) }
                     }
                 }
             },
-            confirmButton = { TextButton(onClick = { showContextMenu = null }) { Text("Закрыть") } }
+            confirmButton = { TextButton(onClick = { showContextMenu = null }) { Text("Закрыть", color = Color(0xFF666666)) } }
         )
     }
 
-    // Create note dialog
+    // Create note dialog — light theme
     if (showCreateDialog) {
         AlertDialog(
             onDismissRequest = { showCreateDialog = false },
+            containerColor = Color(0xFFF5F5F5),
+            titleContentColor = Color(0xFF333333),
             title = { Text("Создать заметку") },
             text = {
                 OutlinedTextField(

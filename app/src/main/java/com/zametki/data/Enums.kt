@@ -3,23 +3,17 @@ package com.zametki.data
 import androidx.compose.ui.graphics.Color
 
 enum class SheetColor(val color: Color, val label: String) {
-    // White
-    WHITE(Color(0xFFFFFDF5), "Белый"),
-    // Rainbow: red → orange → yellow → green → blue → violet + variations
-    LIGHT_PINK(Color(0xFFFFE4EC), "Розовый"),
-    WARM_CORAL(Color(0xFFFFAB91), "Коралловый"),
-    WARM_PEACH(Color(0xFFFFCCBC), "Персиковый"),
-    WARM_CREAM(Color(0xFFF5E6CA), "Кремовый"),
-    LIGHT_YELLOW(Color(0xFFFFF9C4), "Жёлтый"),
-    WARM_SAGE(Color(0xFFC8E6C9), "Шалфей"),
-    LIGHT_MINT(Color(0xFFE0F7E9), "Мятный"),
-    WARM_SKY(Color(0xFFB3E5FC), "Небесный"),
-    LIGHT_BLUE(Color(0xFFE3F2FD), "Голубой"),
-    LIGHT_LAVENDER(Color(0xFFEDE7F6), "Лавандовый"),
-    WARM_LILAC(Color(0xFFD1C4E9), "Сиреневый");
+    WHITE(Color(0xFFFFFDF6), "Белый"),
+    GREEN(Color(0xFF9DD1A1), "Зелёный"),
+    LIGHT_PURPLE(Color(0xFFD0C4E8), "Лавандовый"),
+    BLUE(Color(0xFFB3E5FC), "Голубой"),
+    PEACH(Color(0xFFFFAB91), "Персиковый"),
+    PURPLE(Color(0xFFCFAEE3), "Сиреневый"),
+    YELLOW(Color(0xFFE6DC97), "Жёлтый"),
+    KRAFT(Color(0xFF998564), "Крафт");
 
-    val textColor: Color get() = Color(0xFF333333)
-    val lineColor: Color get() = Color(0xFF8B7355).copy(alpha = 0.2f)
+    val textColor: Color get() = if (this == KRAFT) Color(0xFFFFFFFF) else Color(0xFF333333)
+    val lineColor: Color get() = if (this == KRAFT) Color(0xFFBBA882).copy(alpha = 0.3f) else Color(0xFF8B7355).copy(alpha = 0.2f)
 }
 
 enum class SortMode(val label: String) {
