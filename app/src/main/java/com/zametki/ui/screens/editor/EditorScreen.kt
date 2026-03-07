@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
@@ -35,11 +36,13 @@ import android.util.TypedValue
 import android.view.Gravity
 import android.view.View
 import android.widget.EditText
+import com.zametki.R
 import com.zametki.data.*
 import com.zametki.ui.NoteViewModel
 import com.zametki.ui.components.Accent
 import com.zametki.ui.components.BrownHeader
 import com.zametki.ui.components.DarkBg
+import com.zametki.yandex.YandexDiskManager
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -149,6 +152,13 @@ fun EditorScreen(
     var editTextRef by remember { mutableStateOf<EditText?>(null) }
     var isUpdatingFromCompose by remember { mutableStateOf(false) }
     var showColorSheet by remember { mutableStateOf(false) }
+    var ydSaveStatus by remember { mutableStateOf("") }
+    var showYdFolderPicker by remember { mutableStateOf(false) }
+    var ydFolders by remember { mutableStateOf<List<String>>(emptyList()) }
+    var ydCurrentPath by remember { mutableStateOf("/") }
+    var ydLoading by remember { mutableStateOf(false) }
+    var showNewFolderDialog by remember { mutableStateOf(false) }
+    var newFolderName by remember { mutableStateOf("") }
 
     val isBold = run {
         val s = contentValue.selection
@@ -186,6 +196,21 @@ fun EditorScreen(
                 actions = {
                     IconButton(onClick = { undo() }) { Icon(Icons.Default.Undo, null, tint = Color.White.copy(alpha = if (undoStack.isNotEmpty()) 1f else 0.3f)) }
                     IconButton(onClick = { redo() }) { Icon(Icons.Default.Redo, null, tint = Color.White.copy(alpha = if (redoStack.isNotEmpty()) 1f else 0.3f)) }
+                    IconButton(onClick = {
+                        val token = YandexDiskManager.getToken(context)
+                        if (token != null) {
+                            ydCurrentPath = "/"
+                            ydLoading = true
+                            showYdFolderPicker = true
+                            coroutineScope.launch {
+                                val result = YandexDiskManager.listFolders(token, "/")
+                                ydFolders = result.getOrDefault(emptyList())
+                                ydLoading = false
+                            }
+                        } else {
+                            ydSaveStatus = "Сначала подключите Яндекс Диск в настройках"
+                        }
+                    }) { Icon(painterResource(R.drawable.ic_yadisk), contentDescription = "Яндекс Диск", modifier = Modifier.size(24.dp)) }
                     IconButton(onClick = {
                         val intent = Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_SUBJECT, titleText); putExtra(Intent.EXTRA_TEXT, contentValue.text) }
                         context.startActivity(Intent.createChooser(intent, "Поделиться"))
@@ -401,6 +426,137 @@ fun EditorScreen(
                 modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = screenH.dp)
             )
         }
+    }
+
+    // Yandex Disk status snackbar
+    if (ydSaveStatus.isNotBlank()) {
+        AlertDialog(
+            onDismissRequest = { ydSaveStatus = "" },
+            title = { Text("Яндекс Диск") },
+            text = { Text(ydSaveStatus) },
+            confirmButton = { TextButton(onClick = { ydSaveStatus = "" }) { Text("OK") } }
+        )
+    }
+
+    // Yandex Disk folder picker
+    if (showYdFolderPicker) {
+        AlertDialog(
+            onDismissRequest = { showYdFolderPicker = false },
+            title = { Text("Сохранить на Яндекс Диск") },
+            text = {
+                Column {
+                    Text("Папка: $ydCurrentPath", fontSize = 14.sp, color = Color(0xFF888888),
+                        modifier = Modifier.padding(bottom = 8.dp))
+                    if (ydLoading) {
+                        CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally).padding(16.dp))
+                    } else {
+                        // Back button
+                        if (ydCurrentPath != "/") {
+                            Surface(onClick = {
+                                val parent = ydCurrentPath.substringBeforeLast("/", "/").ifBlank { "/" }
+                                ydCurrentPath = parent
+                                ydLoading = true
+                                coroutineScope.launch {
+                                    val token = YandexDiskManager.getToken(context) ?: return@launch
+                                    val result = YandexDiskManager.listFolders(token, parent)
+                                    ydFolders = result.getOrDefault(emptyList())
+                                    ydLoading = false
+                                }
+                            }, color = Color.Transparent) {
+                                Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.ArrowBack, null, modifier = Modifier.size(20.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text("..", fontSize = 16.sp)
+                                }
+                            }
+                        }
+                        // Folders
+                        ydFolders.forEach { folder ->
+                            Surface(onClick = {
+                                val newPath = if (ydCurrentPath == "/") "/$folder" else "$ydCurrentPath/$folder"
+                                ydCurrentPath = newPath
+                                ydLoading = true
+                                coroutineScope.launch {
+                                    val token = YandexDiskManager.getToken(context) ?: return@launch
+                                    val result = YandexDiskManager.listFolders(token, newPath)
+                                    ydFolders = result.getOrDefault(emptyList())
+                                    ydLoading = false
+                                }
+                            }, color = Color.Transparent) {
+                                Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                    Icon(Icons.Default.Folder, null, tint = Color(0xFFFFCC00), modifier = Modifier.size(20.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(folder, fontSize = 16.sp)
+                                }
+                            }
+                        }
+                        if (ydFolders.isEmpty() && ydCurrentPath == "/") {
+                            Text("Нет папок", fontSize = 14.sp, color = Color(0xFF888888),
+                                modifier = Modifier.padding(vertical = 8.dp))
+                        }
+                        // New folder button
+                        Spacer(Modifier.height(8.dp))
+                        Surface(onClick = { showNewFolderDialog = true }, color = Color.Transparent) {
+                            Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.CreateNewFolder, null, tint = Accent, modifier = Modifier.size(20.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Создать папку", fontSize = 16.sp, color = Accent)
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    showYdFolderPicker = false
+                    coroutineScope.launch {
+                        ydSaveStatus = "Сохранение..."
+                        val token = YandexDiskManager.getToken(context) ?: return@launch
+                        val name = titleText.ifBlank { "Без названия" }
+                        val result = YandexDiskManager.uploadTextFile(token, name, contentValue.text, ydCurrentPath)
+                        ydSaveStatus = result.getOrElse { "Ошибка: ${it.message}" }
+                    }
+                }) { Text("Сохранить сюда") }
+            },
+            dismissButton = { TextButton(onClick = { showYdFolderPicker = false }) { Text("Отмена") } }
+        )
+    }
+
+    // New folder dialog
+    if (showNewFolderDialog) {
+        AlertDialog(
+            onDismissRequest = { showNewFolderDialog = false },
+            title = { Text("Новая папка") },
+            text = {
+                OutlinedTextField(
+                    value = newFolderName,
+                    onValueChange = { newFolderName = it },
+                    label = { Text("Название папки") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    if (newFolderName.isNotBlank()) {
+                        val folderName = newFolderName.trim()
+                        val newPath = if (ydCurrentPath == "/") "/$folderName" else "$ydCurrentPath/$folderName"
+                        showNewFolderDialog = false
+                        newFolderName = ""
+                        ydLoading = true
+                        coroutineScope.launch {
+                            val token = YandexDiskManager.getToken(context) ?: return@launch
+                            YandexDiskManager.createFolder(token, newPath)
+                            // Refresh folder list
+                            val result = YandexDiskManager.listFolders(token, ydCurrentPath)
+                            ydFolders = result.getOrDefault(emptyList())
+                            ydLoading = false
+                        }
+                    }
+                }) { Text("Создать") }
+            },
+            dismissButton = { TextButton(onClick = { showNewFolderDialog = false; newFolderName = "" }) { Text("Отмена") } }
+        )
     }
 
     // Sheet color picker
