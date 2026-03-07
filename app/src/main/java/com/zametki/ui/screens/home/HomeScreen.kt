@@ -161,7 +161,10 @@ fun HomeScreen(
             floatingActionButton = {
                 if (listType != NoteListType.TRASH) {
                     FloatingActionButton(
-                        onClick = { viewModel.createNote { id -> onNavigateToEditor(id) } },
+                        onClick = {
+                            val shouldOpen = viewModel.openNoteAfterCreate.value
+                            viewModel.createNote { id -> if (shouldOpen) onNavigateToEditor(id) }
+                        },
                         containerColor = Accent, contentColor = Color.White
                     ) { Icon(Icons.Default.Add, "Новая заметка") }
                 }

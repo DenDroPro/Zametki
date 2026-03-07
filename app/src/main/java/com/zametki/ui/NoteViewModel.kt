@@ -51,6 +51,9 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
     private val _defaultLineOpacity = MutableStateFlow(prefs.getFloat("default_line_opacity", 0.5f))
     val defaultLineOpacity: StateFlow<Float> = _defaultLineOpacity
 
+    private val _openNoteAfterCreate = MutableStateFlow(prefs.getBoolean("open_note_after_create", false))
+    val openNoteAfterCreate: StateFlow<Boolean> = _openNoteAfterCreate
+
     fun loadNote(id: Long) {
         loadNoteJob?.cancel()
         _currentNote.value = null
@@ -119,6 +122,11 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
     fun setDefaultLineOpacity(opacity: Float) {
         _defaultLineOpacity.value = opacity
         prefs.edit().putFloat("default_line_opacity", opacity).apply()
+    }
+
+    fun setOpenNoteAfterCreate(enabled: Boolean) {
+        _openNoteAfterCreate.value = enabled
+        prefs.edit().putBoolean("open_note_after_create", enabled).apply()
     }
 
     /**

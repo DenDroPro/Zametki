@@ -41,6 +41,7 @@ fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
     val defaultFontSize by viewModel.defaultFontSize.collectAsState()
     val defaultSheetColor by viewModel.defaultSheetColor.collectAsState()
     val defaultLineOpacity by viewModel.defaultLineOpacity.collectAsState()
+    val openAfterCreate by viewModel.openNoteAfterCreate.collectAsState()
     var showSortDialog by remember { mutableStateOf(false) }
     var showClearTrash by remember { mutableStateOf(false) }
     var showColorPicker by remember { mutableStateOf(false) }
@@ -104,6 +105,23 @@ fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
                 modifier = Modifier.padding(horizontal = 56.dp),
                 colors = SliderDefaults.colors(thumbColor = Accent, activeTrackColor = Accent)
             )
+
+            // Open note after creation
+            Surface(onClick = { viewModel.setOpenNoteAfterCreate(!openAfterCreate) }, color = Color.Transparent) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.OpenInNew, null, tint = Accent, modifier = Modifier.size(24.dp))
+                    Spacer(Modifier.width(16.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Открывать после создания", fontSize = 16.sp, color = Color(0xFFDDDDDD))
+                        Text("Сразу открывать новый файл", fontSize = 13.sp, color = Color(0xFF888888))
+                    }
+                    Checkbox(
+                        checked = openAfterCreate,
+                        onCheckedChange = { viewModel.setOpenNoteAfterCreate(it) },
+                        colors = CheckboxDefaults.colors(checkedColor = Accent, uncheckedColor = Color(0xFF888888))
+                    )
+                }
+            }
 
             SectionTitle("Заметки")
             SettingsRow(Icons.Default.Sort, "Сортировка", sortMode.label) { showSortDialog = true }
