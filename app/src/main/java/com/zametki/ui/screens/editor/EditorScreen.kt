@@ -197,32 +197,14 @@ fun EditorScreen(
                     IconButton(onClick = { redo() }) { Icon(Icons.Default.Redo, null, tint = Color.White.copy(alpha = if (redoStack.isNotEmpty()) 1f else 0.3f)) }
                     IconButton(onClick = {
                         try {
-                            val name = titleText.ifBlank { "Без названия" }.replace(Regex("[/\\\\:*?\"<>|]"), "_")
-                            val cacheDir = File(context.cacheDir, "shared_notes")
-                            cacheDir.mkdirs()
-                            val file = File(cacheDir, "$name.txt")
-                            file.writeText(contentValue.text)
-                            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
-                            val intent = Intent(Intent.ACTION_SEND).apply {
-                                type = "text/plain"
-                                putExtra(Intent.EXTRA_STREAM, uri)
-                                putExtra(Intent.EXTRA_SUBJECT, titleText)
-                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                setPackage("ru.yandex.disk")
-                            }
-                            try {
-                                context.startActivity(intent)
-                            } catch (_: Exception) {
-                                val chooser = Intent(Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(Intent.EXTRA_STREAM, uri)
-                                    putExtra(Intent.EXTRA_SUBJECT, titleText)
-                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                                }
-                                context.startActivity(Intent.createChooser(chooser, "Сохранить на Яндекс Диск"))
+                            val launchIntent = context.packageManager.getLaunchIntentForPackage("ru.yandex.disk")
+                            if (launchIntent != null) {
+                                context.startActivity(launchIntent)
+                            } else {
+                                Toast.makeText(context, "Яндекс Диск не установлен", Toast.LENGTH_SHORT).show()
                             }
                         } catch (e: Exception) {
-                            Toast.makeText(context, "Не удалось поделиться файлом", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Не удалось открыть Яндекс Диск", Toast.LENGTH_SHORT).show()
                         }
                     }) { Icon(painterResource(R.drawable.ic_yandex_disk), contentDescription = "Яндекс Диск", tint = Color.Unspecified, modifier = Modifier.size(24.dp)) }
                     IconButton(onClick = {
