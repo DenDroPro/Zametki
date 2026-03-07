@@ -22,9 +22,11 @@ fun NavGraph(navController: NavHostController, viewModel: NoteViewModel) {
     val goEditor: (Long) -> Unit = { id -> navController.navigate(Routes.editor(id)) }
 
     // Collect all notes for prev/next navigation in editor
+    // Use stable ID set as key so sort order doesn't change when notes are edited (updatedAt changes)
     val allNotes by viewModel.allNotes.collectAsState()
     val sortMode by viewModel.sortMode.collectAsState()
-    val sortedNotes = remember(allNotes, sortMode) { viewModel.sortNotes(allNotes, sortMode) }
+    val noteIdSet = remember(allNotes) { allNotes.map { it.id }.toSet() }
+    val sortedNotes = remember(noteIdSet, sortMode) { viewModel.sortNotes(allNotes, sortMode) }
 
     NavHost(navController = navController, startDestination = Routes.HOME) {
         composable(Routes.HOME) {

@@ -231,7 +231,7 @@ fun EditorScreen(
                                 Toast.makeText(context, "Не удалось поделиться файлом", Toast.LENGTH_SHORT).show()
                             }
                         }
-                    }) { Icon(painterResource(R.drawable.ic_yadisk), contentDescription = "Яндекс Диск", modifier = Modifier.size(24.dp)) }
+                    }) { Icon(painterResource(R.drawable.ic_yandex_disk), contentDescription = "Яндекс Диск", modifier = Modifier.size(24.dp)) }
                     IconButton(onClick = {
                         val intent = Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_SUBJECT, titleText); putExtra(Intent.EXTRA_TEXT, contentValue.text) }
                         context.startActivity(Intent.createChooser(intent, "Поделиться"))
@@ -358,11 +358,12 @@ fun EditorScreen(
                                 val visibleRect = Rect()
                                 rootView.getWindowVisibleDisplayFrame(visibleRect)
                                 val visibleHeight = visibleRect.height()
-                                val bottomMargin = (100 * resources.displayMetrics.density).toInt()
+                                val bottomBarHeight = (120 * resources.displayMetrics.density).toInt()
+                                val bottomMargin = (80 * resources.displayMetrics.density).toInt()
                                 val cursorScreenY = absY - scrollState.value
                                 coroutineScope.launch {
-                                    if (cursorScreenY > visibleHeight - bottomMargin) {
-                                        val target = (absY - visibleHeight + bottomMargin).coerceAtLeast(0)
+                                    if (cursorScreenY > visibleHeight - bottomBarHeight - bottomMargin) {
+                                        val target = (absY - visibleHeight + bottomBarHeight + bottomMargin).coerceAtLeast(0)
                                         scrollState.animateScrollTo(target)
                                     }
                                 }

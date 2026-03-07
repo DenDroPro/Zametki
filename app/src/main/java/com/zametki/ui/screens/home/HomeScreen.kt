@@ -1,6 +1,8 @@
 package com.zametki.ui.screens.home
 
 import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -23,13 +25,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.FileProvider
+import com.zametki.R
 import com.zametki.data.*
 import com.zametki.ui.NoteViewModel
 import com.zametki.ui.components.*
 import kotlinx.coroutines.launch
+import java.io.File
 
 enum class NoteListType { ALL, FAVORITES, PINNED, TRASH }
 
@@ -47,6 +53,7 @@ fun HomeScreen(
     onNavigateToTrash: () -> Unit,
     onNavigateToSettings: () -> Unit
 ) {
+    val context = LocalContext.current
     val sortMode by viewModel.sortMode.collectAsState()
     val viewMode by viewModel.viewMode.collectAsState()
     val notesFlow = remember(listType) {
@@ -65,6 +72,11 @@ fun HomeScreen(
     var showSortMenu by remember { mutableStateOf(false) }
     var showContextMenu by remember { mutableStateOf<Note?>(null) }
     var colorFilter by remember { mutableStateOf<SheetColor?>(null) }
+
+    // Multi-select mode
+    var selectionMode by remember { mutableStateOf(false) }
+    val selectedIds = remember { mutableStateListOf<Long>() }
+    fun exitSelection() { selectionMode = false; selectedIds.clear() }
 
     // Distinct colors that actually exist in notes
     val existingColors = remember(notes) {
@@ -113,7 +125,11 @@ fun HomeScreen(
                         }
                     },
                     navigationIcon = {
-                        if (showSearch) {
+                        if (selectionMode) {
+                            IconButton(onClick = { exitSelection() }) {
+                                Icon(Icons.Default.Close, null, tint = Color.White)
+                            }
+                        } else if (showSearch) {
                             IconButton(onClick = { showSearch = false; searchQuery = "" }) {
                                 Icon(Icons.Default.Close, null, tint = Color.White)
                             }
@@ -128,7 +144,85 @@ fun HomeScreen(
                         }
                     },
                     actions = {
-                        if (!showSearch) {
+                        if (selectionMode) {
+                            Text("${selectedIds.size}", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(horizontal = 8.dp))
+                            // Share selected as .txt files via YD
+                            IconButton(onClick = {
+                                val selected = filtered.filter { it.id in selectedIds }
+                                if (selected.isEmpty()) return@IconButton
+                                try {
+                                    val cacheDir = File(context.cacheDir, "shared_notes")
+                                    cacheDir.mkdirs()
+                                    val uris = ArrayList<Uri>()
+                                    for (n in selected) {
+                                        val name = n.title.ifBlank { "Без названия" }.replace(Regex("[/\\\\:*?\"<>|]"), "_")
+                                        val file = File(cacheDir, "$name.txt")
+                                        file.writeText(n.content)
+                                        uris.add(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
+                                    }
+                                    val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                                        type = "text/plain"
+                                        putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        setPackage("ru.yandex.disk")
+                                    }
+                                    context.startActivity(intent)
+                                    exitSelection()
+                                } catch (e: Exception) {
+                                    try {
+                                        val cacheDir = File(context.cacheDir, "shared_notes")
+                                        cacheDir.mkdirs()
+                                        val uris = ArrayList<Uri>()
+                                        for (n in selected) {
+                                            val name = n.title.ifBlank { "Без названия" }.replace(Regex("[/\\\\:*?\"<>|]"), "_")
+                                            val file = File(cacheDir, "$name.txt")
+                                            file.writeText(n.content)
+                                            uris.add(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
+                                        }
+                                        val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                                            type = "text/plain"
+                                            putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                        }
+                                        context.startActivity(Intent.createChooser(intent, "Поделиться"))
+                                        exitSelection()
+                                    } catch (_: Exception) {
+                                        Toast.makeText(context, "Не удалось поделиться", Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            }) { Icon(painterResource(R.drawable.ic_yandex_disk), null, modifier = Modifier.size(24.dp)) }
+                            // Generic share
+                            IconButton(onClick = {
+                                val selected = filtered.filter { it.id in selectedIds }
+                                if (selected.isEmpty()) return@IconButton
+                                try {
+                                    val cacheDir = File(context.cacheDir, "shared_notes")
+                                    cacheDir.mkdirs()
+                                    val uris = ArrayList<Uri>()
+                                    for (n in selected) {
+                                        val name = n.title.ifBlank { "Без названия" }.replace(Regex("[/\\\\:*?\"<>|]"), "_")
+                                        val file = File(cacheDir, "$name.txt")
+                                        file.writeText(n.content)
+                                        uris.add(FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file))
+                                    }
+                                    val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                                        type = "text/plain"
+                                        putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                    }
+                                    context.startActivity(Intent.createChooser(intent, "Поделиться"))
+                                    exitSelection()
+                                } catch (_: Exception) {
+                                    Toast.makeText(context, "Не удалось поделиться", Toast.LENGTH_SHORT).show()
+                                }
+                            }) { Icon(Icons.Default.Share, null, tint = Color.White) }
+                            // Delete selected
+                            IconButton(onClick = {
+                                selectedIds.forEach { viewModel.softDelete(it) }
+                                exitSelection()
+                            }) { Icon(Icons.Default.Delete, null, tint = Color(0xFFFF6B6B)) }
+                        } else if (!showSearch) {
                             IconButton(onClick = { showSearch = true }) {
                                 Icon(Icons.Default.Search, null, tint = Color.White)
                             }
@@ -210,10 +304,38 @@ fun HomeScreen(
                     }
                 }
             } else {
+                val onNoteClick: (Note) -> Unit = { note ->
+                    if (selectionMode) {
+                        if (note.id in selectedIds) selectedIds.remove(note.id) else selectedIds.add(note.id)
+                        if (selectedIds.isEmpty()) selectionMode = false
+                    } else {
+                        onNavigateToEditor(note.id)
+                    }
+                }
+                val onNoteLongClick: (Note) -> Unit = { note ->
+                    if (!selectionMode) {
+                        selectionMode = true
+                        selectedIds.clear()
+                        selectedIds.add(note.id)
+                    } else {
+                        showContextMenu = note
+                    }
+                }
                 when (viewMode) {
                     ViewMode.LIST -> LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         items(filtered, key = { it.id }) { note ->
-                            NoteListItem(note, onClick = { onNavigateToEditor(note.id) }, onLongClick = { showContextMenu = note })
+                            val isSelected = note.id in selectedIds
+                            Box {
+                                NoteListItem(note, onClick = { onNoteClick(note) }, onLongClick = { onNoteLongClick(note) })
+                                if (selectionMode) {
+                                    Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = { onNoteClick(note) },
+                                        modifier = Modifier.align(Alignment.CenterEnd).padding(end = 4.dp),
+                                        colors = CheckboxDefaults.colors(checkedColor = Accent, uncheckedColor = Color(0xFF888888))
+                                    )
+                                }
+                            }
                         }
                     }
                     else -> {
@@ -221,7 +343,18 @@ fun HomeScreen(
                         LazyVerticalGrid(GridCells.Fixed(cols), Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(8.dp),
                             horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             items(filtered, key = { it.id }) { note ->
-                                NoteCard(note, onClick = { onNavigateToEditor(note.id) }, onLongClick = { showContextMenu = note })
+                                val isSelected = note.id in selectedIds
+                                Box {
+                                    NoteCard(note, onClick = { onNoteClick(note) }, onLongClick = { onNoteLongClick(note) })
+                                    if (selectionMode) {
+                                        Checkbox(
+                                            checked = isSelected,
+                                            onCheckedChange = { onNoteClick(note) },
+                                            modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                                            colors = CheckboxDefaults.colors(checkedColor = Accent, uncheckedColor = Color(0xFF888888))
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -231,7 +364,6 @@ fun HomeScreen(
     }
 
     // Context menu
-    val ctx = LocalContext.current
     showContextMenu?.let { note ->
         AlertDialog(
             onDismissRequest = { showContextMenu = null },
@@ -256,7 +388,7 @@ fun HomeScreen(
                                 putExtra(Intent.EXTRA_SUBJECT, note.title)
                                 putExtra(Intent.EXTRA_TEXT, note.content)
                             }
-                            ctx.startActivity(Intent.createChooser(intent, "Поделиться"))
+                            context.startActivity(Intent.createChooser(intent, "Поделиться"))
                             showContextMenu = null
                         }) { Text("Поделиться") }
                         TextButton(onClick = { viewModel.softDelete(note.id); showContextMenu = null }) { Text("Удалить", color = Color.Red) }

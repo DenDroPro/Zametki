@@ -109,7 +109,7 @@ fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
             // Open note after creation
             Surface(onClick = { viewModel.setOpenNoteAfterCreate(!openAfterCreate) }, color = Color.Transparent) {
                 Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Default.OpenInNew, null, tint = Accent, modifier = Modifier.size(24.dp))
+                    Icon(Icons.Default.FolderOpen, null, tint = Accent, modifier = Modifier.size(24.dp))
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
                         Text("Открывать после создания", fontSize = 16.sp, color = Color(0xFFDDDDDD))
