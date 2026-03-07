@@ -141,11 +141,13 @@ fun EditorScreen(
         }
     }
 
-    // Save
+    // Save — only save if note.id matches the noteId we're editing
     LaunchedEffect(titleText, contentValue.text, sheetColor, fontSize, lineOpacity, formatVersion) {
         if (initialized) note?.let {
-            viewModel.saveNote(it.copy(title = titleText, content = contentValue.text, preview = contentValue.text.take(100),
-                formatting = serializeFormats(charFormats), sheetColor = sheetColor, fontSize = fontSize, lineOpacity = lineOpacity))
+            if (it.id == noteId) {
+                viewModel.saveNote(it.copy(title = titleText, content = contentValue.text, preview = contentValue.text.take(100),
+                    formatting = serializeFormats(charFormats), sheetColor = sheetColor, fontSize = fontSize, lineOpacity = lineOpacity))
+            }
         }
     }
 
@@ -325,21 +327,25 @@ fun EditorScreen(
                                 val t = text?.toString() ?: ""
                                 contentValue = TextFieldValue(t, TextRange(selStart.coerceIn(0, t.length), selEnd.coerceIn(0, t.length)))
                             }
-                            // Request scroll to cursor position
-                            post {
-                                val layout = layout ?: return@post
-                                val len = text?.length ?: 0
-                                val safeSel = selStart.coerceIn(0, len)
-                                val line = layout.getLineForOffset(safeSel)
-                                val lineBottom = layout.getLineBottom(line)
-                                val absY = top + lineBottom
-                                coroutineScope.launch {
-                                    val target = (absY - 300).coerceAtLeast(0)
-                                    if (target > scrollState.value) {
-                                        scrollState.animateScrollTo(target)
+                                // Request scroll to cursor position — only when cursor near bottom
+                                post {
+                                    val layout = layout ?: return@post
+                                    val len = text?.length ?: 0
+                                    val safeSel = selStart.coerceIn(0, len)
+                                    val line = layout.getLineForOffset(safeSel)
+                                    val lineBottom = layout.getLineBottom(line)
+                                    val absY = top + lineBottom
+                                    val density = resources.displayMetrics.density
+                                    val viewportApprox = (screenH * density).toInt()
+                                    val bottomMargin = (160 * density).toInt() // 160dp from bottom (toolbar area)
+                                    val cursorScreenY = absY - scrollState.value
+                                    coroutineScope.launch {
+                                        if (cursorScreenY > viewportApprox - bottomMargin) {
+                                            val target = (absY - viewportApprox + bottomMargin).coerceAtLeast(0)
+                                            scrollState.animateScrollTo(target)
+                                        }
                                     }
                                 }
-                            }
                         }
                     }.apply {
                         setBackgroundColor(android.graphics.Color.TRANSPARENT)

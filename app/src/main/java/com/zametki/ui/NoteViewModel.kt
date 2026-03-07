@@ -6,6 +6,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.zametki.ZametkiApplication
 import com.zametki.data.*
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -26,6 +27,7 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
 
     private val _currentNote = MutableStateFlow<Note?>(null)
     val currentNote: StateFlow<Note?> = _currentNote
+    private var loadNoteJob: Job? = null
 
     private val _sortMode = MutableStateFlow(
         SortMode.entries.getOrNull(prefs.getInt("sort_mode", 0)) ?: SortMode.UPDATED_DESC
@@ -50,7 +52,9 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
     val defaultLineOpacity: StateFlow<Float> = _defaultLineOpacity
 
     fun loadNote(id: Long) {
-        viewModelScope.launch {
+        loadNoteJob?.cancel()
+        _currentNote.value = null
+        loadNoteJob = viewModelScope.launch {
             dao.getNoteById(id).collect { _currentNote.value = it }
         }
     }
