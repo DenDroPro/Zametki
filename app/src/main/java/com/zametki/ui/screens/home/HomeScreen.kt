@@ -333,7 +333,7 @@ fun HomeScreen(
                                     Checkbox(
                                         checked = isSelected,
                                         onCheckedChange = { onNoteClick(note) },
-                                        modifier = Modifier.align(Alignment.CenterEnd).padding(end = 4.dp),
+                                        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 4.dp, bottom = 4.dp),
                                         colors = CheckboxDefaults.colors(checkedColor = Accent, uncheckedColor = Color(0xFF888888))
                                     )
                                 }
@@ -352,7 +352,7 @@ fun HomeScreen(
                                         Checkbox(
                                             checked = isSelected,
                                             onCheckedChange = { onNoteClick(note) },
-                                            modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                                            modifier = Modifier.align(Alignment.TopEnd).padding(top = 6.dp, end = 2.dp),
                                             colors = CheckboxDefaults.colors(checkedColor = Accent, uncheckedColor = Color(0xFF888888))
                                         )
                                     }

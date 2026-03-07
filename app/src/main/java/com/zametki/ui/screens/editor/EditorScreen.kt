@@ -197,11 +197,20 @@ fun EditorScreen(
                     IconButton(onClick = { redo() }) { Icon(Icons.Default.Redo, null, tint = Color.White.copy(alpha = if (redoStack.isNotEmpty()) 1f else 0.3f)) }
                     IconButton(onClick = {
                         try {
-                            val launchIntent = context.packageManager.getLaunchIntentForPackage("ru.yandex.disk")
-                            if (launchIntent != null) {
-                                context.startActivity(launchIntent)
-                            } else {
-                                Toast.makeText(context, "Яндекс Диск не установлен", Toast.LENGTH_SHORT).show()
+                            // Try deep link to files tab first
+                            val filesIntent = Intent(Intent.ACTION_VIEW, Uri.parse("yandexdisk:///disk/")).apply {
+                                setPackage("ru.yandex.disk")
+                            }
+                            try {
+                                context.startActivity(filesIntent)
+                            } catch (_: Exception) {
+                                // Fallback: open YD app normally
+                                val launchIntent = context.packageManager.getLaunchIntentForPackage("ru.yandex.disk")
+                                if (launchIntent != null) {
+                                    context.startActivity(launchIntent)
+                                } else {
+                                    Toast.makeText(context, "Яндекс Диск не установлен", Toast.LENGTH_SHORT).show()
+                                }
                             }
                         } catch (e: Exception) {
                             Toast.makeText(context, "Не удалось открыть Яндекс Диск", Toast.LENGTH_SHORT).show()
