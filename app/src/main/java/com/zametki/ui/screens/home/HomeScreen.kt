@@ -420,9 +420,18 @@ fun HomeScreen(
                 OutlinedTextField(
                     value = newNoteName,
                     onValueChange = { newNoteName = it },
-                    label = { Text("Название") },
+                    label = { Text("Название", color = Color(0xFF666666)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = Color(0xFF333333),
+                        unfocusedTextColor = Color(0xFF333333),
+                        cursorColor = Color(0xFF333333),
+                        focusedBorderColor = Color(0xFF666666),
+                        unfocusedBorderColor = Color(0xFFAAAAAA),
+                        focusedLabelColor = Color(0xFF666666),
+                        unfocusedLabelColor = Color(0xFF888888)
+                    ),
                     keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
                         capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Sentences
                     )
