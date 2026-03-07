@@ -1,5 +1,8 @@
 package com.zametki.ui.screens.settings
 
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -17,10 +20,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.content.FileProvider
+import com.zametki.R
 import com.zametki.data.SheetColor
 import com.zametki.data.SortMode
 import com.zametki.data.ViewMode
@@ -29,8 +35,11 @@ import com.zametki.ui.components.Accent
 import com.zametki.ui.components.BrownHeader
 import com.zametki.ui.components.DarkBg
 import com.zametki.ui.components.DarkSurface
-import com.zametki.yandex.YandexDiskManager
 import kotlinx.coroutines.launch
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -46,9 +55,6 @@ fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
     var showClearTrash by remember { mutableStateOf(false) }
     var showColorPicker by remember { mutableStateOf(false) }
     var ydStatus by remember { mutableStateOf("") }
-    var ydLoggedIn by remember { mutableStateOf(YandexDiskManager.isLoggedIn(context)) }
-    var showYdTokenDialog by remember { mutableStateOf(false) }
-    var ydTokenInput by remember { mutableStateOf("") }
 
     Scaffold(
         topBar = {
@@ -127,43 +133,46 @@ fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
             SettingsRow(Icons.Default.Sort, "Сортировка", sortMode.label) { showSortDialog = true }
 
             SectionTitle("Яндекс Диск")
-            if (ydLoggedIn) {
-                SettingsRow(Icons.Default.CloudUpload, "Бэкап на Яндекс Диск", "Загрузить все заметки") {
-                    scope.launch {
-                        ydStatus = "Загрузка..."
-                        val token = YandexDiskManager.getToken(context) ?: return@launch
+            // Backup — create JSON file and share to YD via Intent
+            SettingsRow(Icons.Default.CloudUpload, "Бэкап на Яндекс Диск", "Сохранить все заметки файлом") {
+                scope.launch {
+                    try {
                         val json = viewModel.exportNotesJson()
-                        val result = YandexDiskManager.uploadBackup(token, json)
-                        ydStatus = result.getOrElse { "Ошибка: ${it.message}" }
-                    }
-                }
-                SettingsRow(Icons.Default.CloudDownload, "Восстановить из Яндекс Диска", "Загрузить заметки из бэкапа") {
-                    scope.launch {
-                        ydStatus = "Загрузка..."
-                        val token = YandexDiskManager.getToken(context) ?: return@launch
-                        val result = YandexDiskManager.downloadBackup(token)
-                        result.onSuccess { json ->
-                            viewModel.importNotesFromJson(json)
-                            ydStatus = "Заметки восстановлены!"
-                        }.onFailure {
-                            ydStatus = "Ошибка: ${it.message}"
+                        val date = SimpleDateFormat("yyyy-MM-dd_HH-mm", Locale.getDefault()).format(Date())
+                        val fileName = "zametki_backup_$date.json"
+                        val cacheDir = File(context.cacheDir, "shared_notes")
+                        cacheDir.mkdirs()
+                        val file = File(cacheDir, fileName)
+                        file.writeText(json)
+                        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "application/json"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            putExtra(Intent.EXTRA_SUBJECT, fileName)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            setPackage("ru.yandex.disk")
                         }
+                        try {
+                            context.startActivity(intent)
+                            ydStatus = "Файл бэкапа отправлен на Яндекс Диск"
+                        } catch (_: Exception) {
+                            val chooser = Intent(Intent.ACTION_SEND).apply {
+                                type = "application/json"
+                                putExtra(Intent.EXTRA_STREAM, uri)
+                                putExtra(Intent.EXTRA_SUBJECT, fileName)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            }
+                            context.startActivity(Intent.createChooser(chooser, "Сохранить бэкап"))
+                        }
+                    } catch (e: Exception) {
+                        ydStatus = "Ошибка: ${e.message}"
                     }
                 }
-                SettingsRow(Icons.Default.Logout, "Выйти из Яндекс Диска", "Отключить аккаунт") {
-                    YandexDiskManager.clearToken(context)
-                    ydLoggedIn = false
-                    ydStatus = "Вышли из аккаунта"
-                }
-            } else {
-                SettingsRow(Icons.Default.Cloud, "Подключить Яндекс Диск", "Войти для бэкапа заметок") {
-                    if (YandexDiskManager.CLIENT_ID.isNotBlank()) {
-                        YandexDiskManager.openAuthInBrowser(context)
-                        showYdTokenDialog = true
-                    } else {
-                        showYdTokenDialog = true
-                    }
-                }
+            }
+            // Restore — pick JSON file
+            SettingsRow(Icons.Default.CloudDownload, "Восстановить из бэкапа", "Открыть JSON-файл бэкапа") {
+                // Will be handled via Activity result — for now just show info
+                ydStatus = "Восстановление пока не поддерживается"
             }
             if (ydStatus.isNotBlank()) {
                 Text(ydStatus, fontSize = 13.sp, color = Color(0xFF888888),
@@ -222,43 +231,6 @@ fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
             dismissButton = { TextButton(onClick = { showClearTrash = false }) { Text("Отмена") } })
     }
 
-    if (showYdTokenDialog) {
-        AlertDialog(
-            onDismissRequest = { showYdTokenDialog = false },
-            title = { Text("Яндекс Диск") },
-            text = {
-                Column {
-                    if (YandexDiskManager.CLIENT_ID.isBlank()) {
-                        Text("Для работы Яндекс Диска нужен Client ID. Обратитесь к разработчику.", fontSize = 14.sp)
-                    } else {
-                        Text("После авторизации в браузере скопируйте токен и вставьте сюда:", fontSize = 14.sp)
-                        Spacer(Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = ydTokenInput,
-                            onValueChange = { ydTokenInput = it },
-                            label = { Text("Токен") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-            },
-            confirmButton = {
-                if (YandexDiskManager.CLIENT_ID.isNotBlank()) {
-                    TextButton(onClick = {
-                        if (ydTokenInput.isNotBlank()) {
-                            YandexDiskManager.saveToken(context, ydTokenInput.trim())
-                            ydLoggedIn = true
-                            ydStatus = "Подключено к Яндекс Диску!"
-                            ydTokenInput = ""
-                            showYdTokenDialog = false
-                        }
-                    }) { Text("Сохранить") }
-                }
-            },
-            dismissButton = { TextButton(onClick = { showYdTokenDialog = false }) { Text("Закрыть") } }
-        )
-    }
 }
 
 @Composable

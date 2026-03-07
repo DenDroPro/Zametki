@@ -71,6 +71,8 @@ fun HomeScreen(
     var searchQuery by remember { mutableStateOf("") }
     var showSortMenu by remember { mutableStateOf(false) }
     var showContextMenu by remember { mutableStateOf<Note?>(null) }
+    var showCreateDialog by remember { mutableStateOf(false) }
+    var newNoteName by remember { mutableStateOf("") }
     var colorFilter by remember { mutableStateOf<SheetColor?>(null) }
 
     // Multi-select mode
@@ -191,7 +193,7 @@ fun HomeScreen(
                                         Toast.makeText(context, "Не удалось поделиться", Toast.LENGTH_SHORT).show()
                                     }
                                 }
-                            }) { Icon(painterResource(R.drawable.ic_yandex_disk), null, modifier = Modifier.size(24.dp)) }
+                            }) { Icon(painterResource(R.drawable.ic_yandex_disk), null, tint = Color.Unspecified, modifier = Modifier.size(24.dp)) }
                             // Generic share
                             IconButton(onClick = {
                                 val selected = filtered.filter { it.id in selectedIds }
@@ -255,10 +257,7 @@ fun HomeScreen(
             floatingActionButton = {
                 if (listType != NoteListType.TRASH) {
                     FloatingActionButton(
-                        onClick = {
-                            val shouldOpen = viewModel.openNoteAfterCreate.value
-                            viewModel.createNote { id -> if (shouldOpen) onNavigateToEditor(id) }
-                        },
+                        onClick = { newNoteName = ""; showCreateDialog = true },
                         containerColor = Accent, contentColor = Color.White
                     ) { Icon(Icons.Default.Add, "Новая заметка") }
                 }
@@ -313,13 +312,7 @@ fun HomeScreen(
                     }
                 }
                 val onNoteLongClick: (Note) -> Unit = { note ->
-                    if (!selectionMode) {
-                        selectionMode = true
-                        selectedIds.clear()
-                        selectedIds.add(note.id)
-                    } else {
-                        showContextMenu = note
-                    }
+                    showContextMenu = note
                 }
                 when (viewMode) {
                     ViewMode.LIST -> LazyColumn(Modifier.fillMaxSize().padding(padding), contentPadding = PaddingValues(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -391,11 +384,46 @@ fun HomeScreen(
                             context.startActivity(Intent.createChooser(intent, "Поделиться"))
                             showContextMenu = null
                         }) { Text("Поделиться") }
+                        TextButton(onClick = {
+                            showContextMenu = null
+                            selectionMode = true
+                            selectedIds.clear()
+                            selectedIds.add(note.id)
+                        }) { Text("Выделить") }
                         TextButton(onClick = { viewModel.softDelete(note.id); showContextMenu = null }) { Text("Удалить", color = Color.Red) }
                     }
                 }
             },
             confirmButton = { TextButton(onClick = { showContextMenu = null }) { Text("Закрыть") } }
+        )
+    }
+
+    // Create note dialog
+    if (showCreateDialog) {
+        AlertDialog(
+            onDismissRequest = { showCreateDialog = false },
+            title = { Text("Создать заметку") },
+            text = {
+                OutlinedTextField(
+                    value = newNoteName,
+                    onValueChange = { newNoteName = it },
+                    label = { Text("Название") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Sentences
+                    )
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    val name = newNoteName.trim().ifBlank { "Без названия" }
+                    showCreateDialog = false
+                    val shouldOpen = viewModel.openNoteAfterCreate.value
+                    viewModel.createNote(name) { id -> if (shouldOpen) onNavigateToEditor(id) }
+                }) { Text("Создать") }
+            },
+            dismissButton = { TextButton(onClick = { showCreateDialog = false }) { Text("Отмена") } }
         )
     }
 }

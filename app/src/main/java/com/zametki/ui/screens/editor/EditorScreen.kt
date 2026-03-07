@@ -231,7 +231,7 @@ fun EditorScreen(
                                 Toast.makeText(context, "Не удалось поделиться файлом", Toast.LENGTH_SHORT).show()
                             }
                         }
-                    }) { Icon(painterResource(R.drawable.ic_yandex_disk), contentDescription = "Яндекс Диск", modifier = Modifier.size(24.dp)) }
+                    }) { Icon(painterResource(R.drawable.ic_yandex_disk), contentDescription = "Яндекс Диск", tint = Color.Unspecified, modifier = Modifier.size(24.dp)) }
                     IconButton(onClick = {
                         val intent = Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_SUBJECT, titleText); putExtra(Intent.EXTRA_TEXT, contentValue.text) }
                         context.startActivity(Intent.createChooser(intent, "Поделиться"))
@@ -292,6 +292,9 @@ fun EditorScreen(
                     fontSize = 20.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                     color = titleColor
                 ),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Sentences
+                ),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 12.dp),
                 decorationBox = { inner ->
                     if (titleText.isEmpty()) Text("Заголовок", fontSize = 20.sp, color = titleColor.copy(alpha = 0.3f),
@@ -299,7 +302,7 @@ fun EditorScreen(
                     inner()
                 }
             )
-            HorizontalDivider(color = sheetColor.lineColor, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 15.dp))
+            HorizontalDivider(color = sheetColor.lineColor.copy(alpha = 0.6f), thickness = 1.5.dp, modifier = Modifier.padding(horizontal = 15.dp))
 
             // Content — Native EditText
             val curFontSize = fontSize
@@ -346,25 +349,30 @@ fun EditorScreen(
                                 val t = text?.toString() ?: ""
                                 contentValue = TextFieldValue(t, TextRange(selStart.coerceIn(0, t.length), selEnd.coerceIn(0, t.length)))
                             }
-                            // Request scroll to cursor position — use visible rect (accounts for keyboard)
+                            // Request scroll to cursor position — use getLocationInWindow for accuracy
                             post {
                                 val layout = layout ?: return@post
                                 val len = text?.length ?: 0
                                 val safeSel = selStart.coerceIn(0, len)
                                 val line = layout.getLineForOffset(safeSel)
                                 val lineBottom = layout.getLineBottom(line)
-                                val absY = top + lineBottom
+                                // Get EditText position on screen
+                                val loc = IntArray(2)
+                                getLocationInWindow(loc)
+                                val editTextWindowY = loc[1]
+                                val cursorWindowY = editTextWindowY + lineBottom
                                 // Get actual visible area (keyboard-aware)
                                 val visibleRect = Rect()
                                 rootView.getWindowVisibleDisplayFrame(visibleRect)
-                                val visibleHeight = visibleRect.height()
-                                val bottomBarHeight = (120 * resources.displayMetrics.density).toInt()
-                                val bottomMargin = (80 * resources.displayMetrics.density).toInt()
-                                val cursorScreenY = absY - scrollState.value
-                                coroutineScope.launch {
-                                    if (cursorScreenY > visibleHeight - bottomBarHeight - bottomMargin) {
-                                        val target = (absY - visibleHeight + bottomBarHeight + bottomMargin).coerceAtLeast(0)
-                                        scrollState.animateScrollTo(target)
+                                val visibleBottom = visibleRect.bottom
+                                // Bottom bar (formatting + arrows) is ~110dp
+                                val bottomBarPx = (110 * resources.displayMetrics.density).toInt()
+                                val marginPx = (40 * resources.displayMetrics.density).toInt()
+                                val threshold = visibleBottom - bottomBarPx - marginPx
+                                if (cursorWindowY > threshold) {
+                                    val scrollBy = cursorWindowY - threshold
+                                    coroutineScope.launch {
+                                        scrollState.animateScrollTo(scrollState.value + scrollBy)
                                     }
                                 }
                             }
