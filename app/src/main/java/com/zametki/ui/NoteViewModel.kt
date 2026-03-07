@@ -8,6 +8,8 @@ import com.zametki.ZametkiApplication
 import com.zametki.data.*
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 
 class NoteViewModel(application: Application) : AndroidViewModel(application) {
     private val dao = ZametkiApplication.database.noteDao()
@@ -113,6 +115,62 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
     fun setDefaultLineOpacity(opacity: Float) {
         _defaultLineOpacity.value = opacity
         prefs.edit().putFloat("default_line_opacity", opacity).apply()
+    }
+
+    /**
+     * Export all notes as JSON string for backup
+     */
+    suspend fun exportNotesJson(): String {
+        val notes = allNotes.value
+        val arr = JSONArray()
+        for (n in notes) {
+            val o = JSONObject()
+            o.put("id", n.id)
+            o.put("title", n.title)
+            o.put("content", n.content)
+            o.put("preview", n.preview)
+            o.put("formatting", n.formatting)
+            o.put("sheetColor", n.sheetColor.name)
+            o.put("fontSize", n.fontSize)
+            o.put("lineOpacity", n.lineOpacity.toDouble())
+            o.put("isFavorite", n.isFavorite)
+            o.put("isPinned", n.isPinned)
+            o.put("isDeleted", n.isDeleted)
+            o.put("createdAt", n.createdAt)
+            o.put("updatedAt", n.updatedAt)
+            arr.put(o)
+        }
+        return arr.toString()
+    }
+
+    /**
+     * Import notes from JSON backup string
+     */
+    fun importNotesFromJson(json: String) {
+        viewModelScope.launch {
+            try {
+                val arr = JSONArray(json)
+                for (i in 0 until arr.length()) {
+                    val o = arr.getJSONObject(i)
+                    val color = try { SheetColor.valueOf(o.getString("sheetColor")) } catch (_: Exception) { SheetColor.WHITE }
+                    val note = Note(
+                        title = o.optString("title", ""),
+                        content = o.optString("content", ""),
+                        preview = o.optString("preview", ""),
+                        formatting = o.optString("formatting", ""),
+                        sheetColor = color,
+                        fontSize = o.optInt("fontSize", 16),
+                        lineOpacity = o.optDouble("lineOpacity", 0.15).toFloat(),
+                        isFavorite = o.optBoolean("isFavorite", false),
+                        isPinned = o.optBoolean("isPinned", false),
+                        isDeleted = o.optBoolean("isDeleted", false),
+                        createdAt = o.optLong("createdAt", System.currentTimeMillis()),
+                        updatedAt = o.optLong("updatedAt", System.currentTimeMillis())
+                    )
+                    dao.insert(note)
+                }
+            } catch (_: Exception) {}
+        }
     }
 
     fun sortNotes(notes: List<Note>, mode: SortMode): List<Note> {
