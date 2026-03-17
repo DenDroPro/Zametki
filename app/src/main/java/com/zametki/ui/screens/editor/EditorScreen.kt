@@ -158,6 +158,7 @@ fun EditorScreen(
     var editTextRef by remember { mutableStateOf<EditText?>(null) }
     var isUpdatingFromCompose by remember { mutableStateOf(false) }
     var showColorSheet by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val isBold = run {
         val s = contentValue.selection
@@ -239,10 +240,7 @@ fun EditorScreen(
                         context.startActivity(Intent.createChooser(intent, "Поделиться"))
                     }) { Icon(Icons.Default.Share, null, tint = Color.White) }
                     // Delete note button
-                    IconButton(onClick = {
-                        viewModel.softDelete(noteId)
-                        onNavigateBack()
-                    }) { Icon(Icons.Default.Delete, null, tint = Color(0xFFFF6B6B)) }
+                    IconButton(onClick = { showDeleteConfirm = true }) { Icon(Icons.Default.Delete, null, tint = Color(0xFFFF6B6B)) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BrownHeader)
             )
@@ -469,6 +467,26 @@ fun EditorScreen(
                 modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = screenH.dp)
             )
         }
+    }
+
+    // Delete confirmation dialog
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            containerColor = Color(0xFFF5F5F5),
+            title = { Text("Удалить заметку?", color = Color(0xFF333333)) },
+            text = { Text("Заметка будет перемещена в корзину.", color = Color(0xFF666666)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    viewModel.softDelete(noteId)
+                    onNavigateBack()
+                }) { Text("Удалить", color = Color.Red) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Отмена", color = Color(0xFF666666)) }
+            }
+        )
     }
 
     // Sheet color picker
