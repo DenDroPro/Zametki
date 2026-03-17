@@ -5,7 +5,6 @@ import androidx.compose.ui.graphics.Color
 enum class SheetColor(val color: Color, val label: String) {
     WHITE(Color(0xFFFFFDF6), "Белый"),
     GREEN(Color(0xFF9DD1A1), "Зелёный"),
-    LIGHT_PURPLE(Color(0xFFD0C4E8), "Лавандовый"),
     BLUE(Color(0xFFB3E5FC), "Голубой"),
     PEACH(Color(0xFFFFAB91), "Персиковый"),
     PURPLE(Color(0xFFCFAEE3), "Сиреневый"),

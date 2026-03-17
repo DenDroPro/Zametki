@@ -78,8 +78,8 @@ fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Настройки", fontWeight = FontWeight.Bold, color = Color.White) },
-                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Default.ArrowBack, null, tint = Color.White) } },
+                title = { Text("Настройки", fontWeight = FontWeight.Bold, color = Color(0xFF4A3728)) },
+                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Default.ArrowBack, null, tint = Color(0xFF4A3728)) } },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BrownHeader)
             )
         },
@@ -94,16 +94,16 @@ fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
                     Icon(Icons.Default.FormatSize, null, tint = Accent, modifier = Modifier.size(24.dp))
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Размер шрифта", fontSize = 16.sp, color = Color(0xFFDDDDDD))
-                        Text("$defaultFontSize", fontSize = 13.sp, color = Color(0xFF888888))
+                        Text("Размер шрифта", fontSize = 16.sp, color = Color(0xFF4A3728))
+                        Text("$defaultFontSize", fontSize = 13.sp, color = Color(0xFF8B7B6E))
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { if (defaultFontSize > 10) viewModel.setDefaultFontSize(defaultFontSize - 1) }) {
-                            Text("—", fontSize = 18.sp, color = Color(0xFFBBBBBB))
+                            Text("—", fontSize = 18.sp, color = Color(0xFF8B7B6E))
                         }
-                        Text("$defaultFontSize", fontSize = 16.sp, color = Color.White, modifier = Modifier.width(30.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                        Text("$defaultFontSize", fontSize = 16.sp, color = Color(0xFF4A3728), modifier = Modifier.width(30.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                         IconButton(onClick = { if (defaultFontSize < 30) viewModel.setDefaultFontSize(defaultFontSize + 1) }) {
-                            Text("+", fontSize = 18.sp, color = Color(0xFFBBBBBB))
+                            Text("+", fontSize = 18.sp, color = Color(0xFF8B7B6E))
                         }
                     }
                 }
@@ -118,8 +118,8 @@ fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
                     Icon(Icons.Default.LinearScale, null, tint = Accent, modifier = Modifier.size(24.dp))
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Яркость линий", fontSize = 16.sp, color = Color(0xFFDDDDDD))
-                        Text("${(defaultLineOpacity * 100).toInt()}%", fontSize = 13.sp, color = Color(0xFF888888))
+                        Text("Яркость линий", fontSize = 16.sp, color = Color(0xFF4A3728))
+                        Text("${(defaultLineOpacity * 100).toInt()}%", fontSize = 13.sp, color = Color(0xFF8B7B6E))
                     }
                 }
             }
@@ -137,13 +137,13 @@ fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
                     Icon(Icons.Default.FolderOpen, null, tint = Accent, modifier = Modifier.size(24.dp))
                     Spacer(Modifier.width(16.dp))
                     Column(Modifier.weight(1f)) {
-                        Text("Открывать после создания", fontSize = 16.sp, color = Color(0xFFDDDDDD))
-                        Text("Сразу открывать новый файл", fontSize = 13.sp, color = Color(0xFF888888))
+                        Text("Открывать после создания", fontSize = 16.sp, color = Color(0xFF4A3728))
+                        Text("Сразу открывать новый файл", fontSize = 13.sp, color = Color(0xFF8B7B6E))
                     }
                     Checkbox(
                         checked = openAfterCreate,
                         onCheckedChange = { viewModel.setOpenNoteAfterCreate(it) },
-                        colors = CheckboxDefaults.colors(checkedColor = Accent, uncheckedColor = Color(0xFF888888))
+                        colors = CheckboxDefaults.colors(checkedColor = Accent, uncheckedColor = Color(0xFFB0A396))
                     )
                 }
             }
@@ -193,7 +193,7 @@ fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
                 jsonFilePicker.launch(arrayOf("application/json", "*/*"))
             }
             if (ydStatus.isNotBlank()) {
-                Text(ydStatus, fontSize = 13.sp, color = Color(0xFF888888),
+                Text(ydStatus, fontSize = 13.sp, color = Color(0xFF8B7B6E),
                     modifier = Modifier.padding(horizontal = 56.dp, vertical = 4.dp))
             }
 
@@ -265,8 +265,8 @@ fun SettingsRow(icon: ImageVector, title: String, subtitle: String, isDestructiv
             Icon(icon, null, tint = if (isDestructive) Color.Red else Accent, modifier = Modifier.size(24.dp))
             Spacer(Modifier.width(16.dp))
             Column {
-                Text(title, fontSize = 16.sp, color = if (isDestructive) Color.Red else Color(0xFFDDDDDD))
-                if (subtitle.isNotBlank()) Text(subtitle, fontSize = 13.sp, color = Color(0xFF888888))
+                Text(title, fontSize = 16.sp, color = if (isDestructive) Color.Red else Color(0xFF4A3728))
+                if (subtitle.isNotBlank()) Text(subtitle, fontSize = 13.sp, color = Color(0xFF8B7B6E))
             }
         }
     }

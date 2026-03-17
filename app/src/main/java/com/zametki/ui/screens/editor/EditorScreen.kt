@@ -46,6 +46,7 @@ import com.zametki.ui.NoteViewModel
 import com.zametki.ui.components.Accent
 import com.zametki.ui.components.BrownHeader
 import com.zametki.ui.components.DarkBg
+import com.zametki.ui.components.DarkSurface
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -192,10 +193,10 @@ fun EditorScreen(
         topBar = {
             TopAppBar(
                 title = {},
-                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Default.ArrowBack, null, tint = Color.White) } },
+                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Default.ArrowBack, null, tint = Color(0xFF4A3728)) } },
                 actions = {
-                    IconButton(onClick = { undo() }) { Icon(Icons.Default.Undo, null, tint = Color.White.copy(alpha = if (undoStack.isNotEmpty()) 1f else 0.3f)) }
-                    IconButton(onClick = { redo() }) { Icon(Icons.Default.Redo, null, tint = Color.White.copy(alpha = if (redoStack.isNotEmpty()) 1f else 0.3f)) }
+                    IconButton(onClick = { undo() }) { Icon(Icons.Default.Undo, null, tint = Color(0xFF4A3728).copy(alpha = if (undoStack.isNotEmpty()) 1f else 0.3f)) }
+                    IconButton(onClick = { redo() }) { Icon(Icons.Default.Redo, null, tint = Color(0xFF4A3728).copy(alpha = if (redoStack.isNotEmpty()) 1f else 0.3f)) }
                     // YD button — same code as HomeScreen selection mode
                     IconButton(onClick = {
                         try {
@@ -238,7 +239,7 @@ fun EditorScreen(
                     IconButton(onClick = {
                         val intent = Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_SUBJECT, titleText); putExtra(Intent.EXTRA_TEXT, contentValue.text) }
                         context.startActivity(Intent.createChooser(intent, "Поделиться"))
-                    }) { Icon(Icons.Default.Share, null, tint = Color.White) }
+                    }) { Icon(Icons.Default.Share, null, tint = Color(0xFF4A3728)) }
                     // Delete note button
                     IconButton(onClick = { showDeleteConfirm = true }) { Icon(Icons.Default.Delete, null, tint = Color(0xFFFF6B6B)) }
                 },
@@ -246,42 +247,42 @@ fun EditorScreen(
             )
         },
         bottomBar = {
-            Surface(color = Color(0xFF2A2A2A), tonalElevation = 8.dp) {
+            Surface(color = DarkSurface, tonalElevation = 8.dp) {
                 Column {
                     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { toggleFmt({ it.bold }, { f, v -> f.copy(bold = v) }) }) {
                             Text("Ж", fontWeight = if (isBold) androidx.compose.ui.text.font.FontWeight.ExtraBold else androidx.compose.ui.text.font.FontWeight.Normal,
-                                fontSize = 18.sp, color = if (isBold) Accent else Color(0xFFBBBBBB))
+                                fontSize = 18.sp, color = if (isBold) Accent else Color(0xFFB0A396))
                         }
                         IconButton(onClick = { toggleFmt({ it.italic }, { f, v -> f.copy(italic = v) }) }) {
                             Text("К", fontWeight = androidx.compose.ui.text.font.FontWeight.Normal,
-                                fontSize = 18.sp, color = if (isItalic) Accent else Color(0xFFBBBBBB),
+                                fontSize = 18.sp, color = if (isItalic) Accent else Color(0xFFB0A396),
                                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
                         }
                         IconButton(onClick = { toggleFmt({ it.underline }, { f, v -> f.copy(underline = v) }) }) {
-                            Text("Ч", fontSize = 18.sp, color = if (isUnderline) Accent else Color(0xFFBBBBBB),
+                            Text("Ч", fontSize = 18.sp, color = if (isUnderline) Accent else Color(0xFFB0A396),
                                 textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline)
                         }
                         Spacer(Modifier.width(4.dp))
                         // Font size
                         IconButton(onClick = { if (fontSize > 10) { fontSize--; formatVersion++ } }) {
-                            Text("A-", fontSize = 16.sp, color = Color(0xFFBBBBBB))
+                            Text("A-", fontSize = 16.sp, color = Color(0xFF8B7B6E))
                         }
-                        Text("${fontSize}", fontSize = 14.sp, color = Color(0xFFDDDDDD))
+                        Text("${fontSize}", fontSize = 14.sp, color = Color(0xFF4A3728))
                         IconButton(onClick = { if (fontSize < 30) { fontSize++; formatVersion++ } }) {
-                            Text("A+", fontSize = 16.sp, color = Color(0xFFBBBBBB))
+                            Text("A+", fontSize = 16.sp, color = Color(0xFF8B7B6E))
                         }
                         Spacer(Modifier.weight(1f))
                         // Sheet color
                         IconButton(onClick = { showColorSheet = !showColorSheet }) {
-                            Icon(Icons.Default.Palette, null, tint = Color(0xFFBBBBBB))
+                            Icon(Icons.Default.Palette, null, tint = Color(0xFF8B7B6E))
                         }
                     }
                     // Navigation prev/next
                     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
                         horizontalArrangement = Arrangement.SpaceBetween) {
-                        IconButton(onClick = onNavigatePrev) { Icon(Icons.Default.ChevronLeft, null, tint = Color(0xFF888888)) }
-                        IconButton(onClick = onNavigateNext) { Icon(Icons.Default.ChevronRight, null, tint = Color(0xFF888888)) }
+                        IconButton(onClick = onNavigatePrev) { Icon(Icons.Default.ChevronLeft, null, tint = Color(0xFF8B7B6E)) }
+                        IconButton(onClick = onNavigateNext) { Icon(Icons.Default.ChevronRight, null, tint = Color(0xFF8B7B6E)) }
                     }
                 }
             }

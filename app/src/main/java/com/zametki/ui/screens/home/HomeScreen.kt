@@ -147,38 +147,38 @@ fun HomeScreen(
                     title = {
                         if (showSearch) {
                             TextField(value = searchQuery, onValueChange = { searchQuery = it },
-                                placeholder = { Text("Поиск...", color = Color(0xFF888888)) }, singleLine = true,
-                                colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent, focusedTextColor = Color.White, unfocusedTextColor = Color.White),
+                                placeholder = { Text("Поиск...", color = Color(0xFF8B7B6E)) }, singleLine = true,
+                                colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent, focusedTextColor = Color(0xFF4A3728), unfocusedTextColor = Color(0xFF4A3728)),
                                 modifier = Modifier.fillMaxWidth())
                         } else {
                             Column {
-                                Text(title, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text("${filtered.size} заметок", fontSize = 12.sp, color = Color.White.copy(alpha = 0.6f), maxLines = 1)
+                                Text(title, fontWeight = FontWeight.Bold, color = Color(0xFF4A3728), fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text("${filtered.size} заметок", fontSize = 12.sp, color = Color(0xFF8B7B6E), maxLines = 1)
                             }
                         }
                     },
                     navigationIcon = {
                         if (selectionMode) {
                             IconButton(onClick = { exitSelection() }) {
-                                Icon(Icons.Default.Close, null, tint = Color.White)
+                                Icon(Icons.Default.Close, null, tint = Color(0xFF4A3728))
                             }
                         } else if (showSearch) {
                             IconButton(onClick = { showSearch = false; searchQuery = "" }) {
-                                Icon(Icons.Default.Close, null, tint = Color.White)
+                                Icon(Icons.Default.Close, null, tint = Color(0xFF4A3728))
                             }
                         } else if (listType != NoteListType.ALL) {
                             IconButton(onClick = onNavigateBack) {
-                                Icon(Icons.Default.ArrowBack, null, tint = Color.White)
+                                Icon(Icons.Default.ArrowBack, null, tint = Color(0xFF4A3728))
                             }
                         } else {
                             IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                Icon(Icons.Default.Menu, null, tint = Color.White)
+                                Icon(Icons.Default.Menu, null, tint = Color(0xFF4A3728))
                             }
                         }
                     },
                     actions = {
                         if (selectionMode) {
-                            Text("${selectedIds.size}", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                            Text("${selectedIds.size}", color = Color(0xFF4A3728), fontSize = 16.sp, fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 8.dp))
                             // Share selected as .txt files via YD
                             IconButton(onClick = {
@@ -249,7 +249,7 @@ fun HomeScreen(
                                 } catch (_: Exception) {
                                     Toast.makeText(context, "Не удалось поделиться", Toast.LENGTH_SHORT).show()
                                 }
-                            }) { Icon(Icons.Default.Share, null, tint = Color.White) }
+                            }) { Icon(Icons.Default.Share, null, tint = Color(0xFF4A3728)) }
                             // Delete selected
                             IconButton(onClick = {
                                 selectedIds.forEach { viewModel.softDelete(it) }
@@ -257,7 +257,7 @@ fun HomeScreen(
                             }) { Icon(Icons.Default.Delete, null, tint = Color(0xFFFF6B6B)) }
                         } else if (!showSearch) {
                             IconButton(onClick = { showSearch = true }) {
-                                Icon(Icons.Default.Search, null, tint = Color.White)
+                                Icon(Icons.Default.Search, null, tint = Color(0xFF4A3728))
                             }
                             // Select files button
                             IconButton(onClick = {
@@ -266,7 +266,7 @@ fun HomeScreen(
                                     selectedIds.clear()
                                 }
                             }) {
-                                Icon(Icons.Default.CheckBox, null, tint = Color.White)
+                                Icon(Icons.Default.CheckBox, null, tint = Color(0xFF4A3728))
                             }
                             IconButton(onClick = { viewModel.setViewMode(viewMode.next()) }) {
                                 Icon(
@@ -274,13 +274,13 @@ fun HomeScreen(
                                         ViewMode.LIST -> Icons.Default.ViewList
                                         ViewMode.GRID_2 -> Icons.Default.GridView
                                         ViewMode.GRID_3 -> Icons.Default.Apps
-                                    }, null, tint = Color.White
+                                    }, null, tint = Color(0xFF4A3728)
                                 )
                             }
                             Box {
                                 var showMoreMenu by remember { mutableStateOf(false) }
                                 IconButton(onClick = { showMoreMenu = true }) {
-                                    Icon(Icons.Default.MoreVert, null, tint = Color.White)
+                                    Icon(Icons.Default.MoreVert, null, tint = Color(0xFF4A3728))
                                 }
                                 DropdownMenu(expanded = showMoreMenu, onDismissRequest = { showMoreMenu = false }) {
                                     DropdownMenuItem(
@@ -312,7 +312,7 @@ fun HomeScreen(
             },
             bottomBar = {
                 if (existingColors.size > 1) {
-                    Surface(color = Color(0xFF2A2A2A), tonalElevation = 4.dp) {
+                    Surface(color = DarkSurface, tonalElevation = 4.dp) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
                                 .horizontalScroll(rememberScrollState()),
@@ -322,17 +322,17 @@ fun HomeScreen(
                             // "All" chip
                             Box(
                                 Modifier.size(28.dp).clip(CircleShape)
-                                    .background(if (colorFilter == null) Accent else Color(0xFF555555))
+                                    .background(if (colorFilter == null) Accent else Color(0xFFCBC2B9))
                                     .clickable { colorFilter = null },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.Circle, null, tint = Color.White, modifier = Modifier.size(14.dp))
+                                Icon(Icons.Default.Circle, null, tint = Color(0xFFFAF6F1), modifier = Modifier.size(14.dp))
                             }
                             existingColors.forEach { c ->
                                 Box(
                                     Modifier.size(28.dp).clip(CircleShape)
                                         .background(c.color)
-                                        .then(if (c == colorFilter) Modifier.border(2.dp, Accent, CircleShape) else Modifier.border(1.dp, Color(0xFF555555), CircleShape))
+                                        .then(if (c == colorFilter) Modifier.border(2.dp, Accent, CircleShape) else Modifier.border(1.dp, Color(0xFFCBC2B9), CircleShape))
                                         .clickable { colorFilter = if (colorFilter == c) null else c }
                                 )
                             }
@@ -345,9 +345,9 @@ fun HomeScreen(
             if (filtered.isEmpty()) {
                 Box(Modifier.fillMaxSize().padding(padding), Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Outlined.Description, null, Modifier.size(64.dp), tint = Color(0xFF555555))
+                        Icon(Icons.Outlined.Description, null, Modifier.size(64.dp), tint = Color(0xFFCBC2B9))
                         Spacer(Modifier.height(16.dp))
-                        Text("Нет заметок", fontSize = 18.sp, color = Color(0xFF777777))
+                        Text("Нет заметок", fontSize = 18.sp, color = Color(0xFF8B7B6E))
                     }
                 }
             } else {
@@ -375,7 +375,7 @@ fun HomeScreen(
                                         checked = isSelected,
                                         onCheckedChange = { onNoteClick(note) },
                                         modifier = Modifier.padding(start = 4.dp),
-                                        colors = CheckboxDefaults.colors(checkedColor = Accent, uncheckedColor = Color(0xFF888888))
+                                        colors = CheckboxDefaults.colors(checkedColor = Accent, uncheckedColor = Color(0xFFB0A396))
                                     )
                                 }
                             }
@@ -394,7 +394,7 @@ fun HomeScreen(
                                             checked = isSelected,
                                             onCheckedChange = { onNoteClick(note) },
                                             modifier = Modifier.align(Alignment.TopEnd).padding(top = 2.dp, end = 0.dp).size(32.dp),
-                                            colors = CheckboxDefaults.colors(checkedColor = Accent, uncheckedColor = Color(0xFF888888))
+                                            colors = CheckboxDefaults.colors(checkedColor = Accent, uncheckedColor = Color(0xFFB0A396))
                                         )
                                     }
                                 }
