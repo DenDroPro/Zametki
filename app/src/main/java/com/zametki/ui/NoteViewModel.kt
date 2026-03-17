@@ -117,9 +117,39 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
     fun restore(id: Long) { viewModelScope.launch { dao.restore(id) } }
     fun permanentlyDelete(note: Note) { viewModelScope.launch { dao.delete(note) } }
     fun toggleFavorite(id: Long) { viewModelScope.launch { dao.toggleFavorite(id) } }
-    fun togglePin(id: Long) { viewModelScope.launch { dao.togglePin(id) } }
+    fun togglePin(id: Long) {
+        viewModelScope.launch {
+            // Check current state to decide if we're pinning or unpinning
+            val notes = allNotes.value
+            val note = notes.find { it.id == id } ?: return@launch
+            if (!note.isPinned) {
+                // Pinning: assign next order before toggling
+                val nextOrder = dao.getNextPinOrder()
+                dao.setPinOrder(id, nextOrder)
+            } else {
+                // Unpinning: reset order
+                dao.setPinOrder(id, 0)
+            }
+            dao.togglePin(id)
+        }
+    }
     fun changeColor(id: Long, color: SheetColor) { viewModelScope.launch { dao.changeColor(id, color) } }
     fun emptyTrash() { viewModelScope.launch { dao.emptyTrash() } }
+
+    fun movePinned(noteId: Long, direction: Int) {
+        viewModelScope.launch {
+            val pinned = allNotes.value.filter { it.isPinned }.sortedBy { it.pinOrder }
+            val idx = pinned.indexOfFirst { it.id == noteId }
+            if (idx < 0) return@launch
+            val targetIdx = idx + direction
+            if (targetIdx < 0 || targetIdx >= pinned.size) return@launch
+            // Swap pinOrder values
+            val current = pinned[idx]
+            val target = pinned[targetIdx]
+            dao.setPinOrder(current.id, target.pinOrder)
+            dao.setPinOrder(target.id, current.pinOrder)
+        }
+    }
 
     fun setSortMode(mode: SortMode) {
         _sortMode.value = mode
@@ -169,6 +199,7 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
             o.put("lineOpacity", n.lineOpacity.toDouble())
             o.put("isFavorite", n.isFavorite)
             o.put("isPinned", n.isPinned)
+            o.put("pinOrder", n.pinOrder)
             o.put("isDeleted", n.isDeleted)
             o.put("createdAt", n.createdAt)
             o.put("updatedAt", n.updatedAt)
@@ -197,6 +228,7 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
                         lineOpacity = o.optDouble("lineOpacity", 0.15).toFloat(),
                         isFavorite = o.optBoolean("isFavorite", false),
                         isPinned = o.optBoolean("isPinned", false),
+                        pinOrder = o.optInt("pinOrder", 0),
                         isDeleted = o.optBoolean("isDeleted", false),
                         createdAt = o.optLong("createdAt", System.currentTimeMillis()),
                         updatedAt = o.optLong("updatedAt", System.currentTimeMillis())
@@ -219,6 +251,6 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
             SortMode.NAME_DESC -> rest.sortedByDescending { it.title.lowercase() }
             SortMode.COLOR -> rest.sortedBy { it.sheetColor.ordinal }
         }
-        return pinned.sortedByDescending { it.updatedAt } + sorted
+        return pinned.sortedBy { it.pinOrder } + sorted
     }
 }

@@ -41,6 +41,12 @@ interface NoteDao {
     @Query("UPDATE notes SET isPinned = NOT isPinned WHERE id = :id")
     suspend fun togglePin(id: Long)
 
+    @Query("UPDATE notes SET pinOrder = :order WHERE id = :id")
+    suspend fun setPinOrder(id: Long, order: Int)
+
+    @Query("SELECT COALESCE(MAX(pinOrder), 0) + 1 FROM notes WHERE isPinned = 1 AND isDeleted = 0")
+    suspend fun getNextPinOrder(): Int
+
     @Query("UPDATE notes SET sheetColor = :color, updatedAt = :now WHERE id = :id")
     suspend fun changeColor(id: Long, color: SheetColor, now: Long = System.currentTimeMillis())
 

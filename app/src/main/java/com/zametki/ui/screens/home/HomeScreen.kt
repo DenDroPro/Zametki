@@ -429,6 +429,20 @@ fun HomeScreen(
                         TextButton(onClick = { viewModel.togglePin(note.id); showContextMenu = null }) {
                             Text(if (note.isPinned) "Открепить" else "Закрепить", color = Color(0xFF333333))
                         }
+                        if (note.isPinned) {
+                            Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp), horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                TextButton(onClick = { viewModel.movePinned(note.id, -1); showContextMenu = null }, modifier = Modifier.weight(1f)) {
+                                    Icon(Icons.Default.KeyboardArrowUp, null, tint = Color(0xFF333333), modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Выше", color = Color(0xFF333333), fontSize = 13.sp)
+                                }
+                                TextButton(onClick = { viewModel.movePinned(note.id, 1); showContextMenu = null }, modifier = Modifier.weight(1f)) {
+                                    Icon(Icons.Default.KeyboardArrowDown, null, tint = Color(0xFF333333), modifier = Modifier.size(18.dp))
+                                    Spacer(Modifier.width(4.dp))
+                                    Text("Ниже", color = Color(0xFF333333), fontSize = 13.sp)
+                                }
+                            }
+                        }
                         TextButton(onClick = { viewModel.duplicateNote(note); showContextMenu = null }) { Text("Создать копию", color = Color(0xFF333333)) }
                         TextButton(onClick = {
                             val intent = Intent(Intent.ACTION_SEND).apply {
