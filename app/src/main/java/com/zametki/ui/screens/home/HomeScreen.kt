@@ -37,6 +37,7 @@ import com.zametki.R
 import com.zametki.data.*
 import com.zametki.ui.NoteViewModel
 import com.zametki.ui.components.*
+import com.zametki.ui.components.themeColors
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -48,6 +49,7 @@ fun HomeScreen(
     viewModel: NoteViewModel,
     listType: NoteListType,
     title: String,
+    isDark: Boolean,
     onNavigateToEditor: (Long) -> Unit,
     onNavigateBack: () -> Unit,
     onNavigateToAll: () -> Unit,
@@ -58,6 +60,7 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val t = themeColors(isDark)
     val sortMode by viewModel.sortMode.collectAsState()
     val viewMode by viewModel.viewMode.collectAsState()
 
@@ -133,7 +136,7 @@ fun HomeScreen(
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
-            AppDrawerContent(drawerItem,
+            AppDrawerContent(drawerItem, isDark,
                 onAll = { scope.launch { drawerState.close() }; onNavigateToAll() },
                 onFavorites = { scope.launch { drawerState.close() }; onNavigateToFavorites() },
                 onPinned = { scope.launch { drawerState.close() }; onNavigateToPinned() },
@@ -147,38 +150,38 @@ fun HomeScreen(
                     title = {
                         if (showSearch) {
                             TextField(value = searchQuery, onValueChange = { searchQuery = it },
-                                placeholder = { Text("Поиск...", color = Color(0xFF8B7B6E)) }, singleLine = true,
-                                colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent, focusedTextColor = Color(0xFF4A3728), unfocusedTextColor = Color(0xFF4A3728)),
+                                placeholder = { Text("Поиск...", color = t.textSecondary) }, singleLine = true,
+                                colors = TextFieldDefaults.colors(focusedContainerColor = Color.Transparent, unfocusedContainerColor = Color.Transparent, focusedTextColor = t.textPrimary, unfocusedTextColor = t.textPrimary),
                                 modifier = Modifier.fillMaxWidth())
                         } else {
                             Column {
-                                Text(title, fontWeight = FontWeight.Bold, color = Color(0xFF4A3728), fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                Text("${filtered.size} заметок", fontSize = 12.sp, color = Color(0xFF8B7B6E), maxLines = 1)
+                                Text(title, fontWeight = FontWeight.Bold, color = t.textPrimary, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text("${filtered.size} заметок", fontSize = 12.sp, color = t.textSecondary, maxLines = 1)
                             }
                         }
                     },
                     navigationIcon = {
                         if (selectionMode) {
                             IconButton(onClick = { exitSelection() }) {
-                                Icon(Icons.Default.Close, null, tint = Color(0xFF4A3728))
+                                Icon(Icons.Default.Close, null, tint = t.textPrimary)
                             }
                         } else if (showSearch) {
                             IconButton(onClick = { showSearch = false; searchQuery = "" }) {
-                                Icon(Icons.Default.Close, null, tint = Color(0xFF4A3728))
+                                Icon(Icons.Default.Close, null, tint = t.textPrimary)
                             }
                         } else if (listType != NoteListType.ALL) {
                             IconButton(onClick = onNavigateBack) {
-                                Icon(Icons.Default.ArrowBack, null, tint = Color(0xFF4A3728))
+                                Icon(Icons.Default.ArrowBack, null, tint = t.textPrimary)
                             }
                         } else {
                             IconButton(onClick = { scope.launch { drawerState.open() } }) {
-                                Icon(Icons.Default.Menu, null, tint = Color(0xFF4A3728))
+                                Icon(Icons.Default.Menu, null, tint = t.textPrimary)
                             }
                         }
                     },
                     actions = {
                         if (selectionMode) {
-                            Text("${selectedIds.size}", color = Color(0xFF4A3728), fontSize = 16.sp, fontWeight = FontWeight.Bold,
+                            Text("${selectedIds.size}", color = t.textPrimary, fontSize = 16.sp, fontWeight = FontWeight.Bold,
                                 modifier = Modifier.padding(horizontal = 8.dp))
                             // Share selected as .txt files via YD
                             IconButton(onClick = {
@@ -249,7 +252,7 @@ fun HomeScreen(
                                 } catch (_: Exception) {
                                     Toast.makeText(context, "Не удалось поделиться", Toast.LENGTH_SHORT).show()
                                 }
-                            }) { Icon(Icons.Default.Share, null, tint = Color(0xFF4A3728)) }
+                            }) { Icon(Icons.Default.Share, null, tint = t.textPrimary) }
                             // Delete selected
                             IconButton(onClick = {
                                 selectedIds.forEach { viewModel.softDelete(it) }
@@ -257,7 +260,7 @@ fun HomeScreen(
                             }) { Icon(Icons.Default.Delete, null, tint = Color(0xFFFF6B6B)) }
                         } else if (!showSearch) {
                             IconButton(onClick = { showSearch = true }) {
-                                Icon(Icons.Default.Search, null, tint = Color(0xFF4A3728))
+                                Icon(Icons.Default.Search, null, tint = t.textPrimary)
                             }
                             // Select files button
                             IconButton(onClick = {
@@ -266,7 +269,7 @@ fun HomeScreen(
                                     selectedIds.clear()
                                 }
                             }) {
-                                Icon(Icons.Default.CheckBox, null, tint = Color(0xFF4A3728))
+                                Icon(Icons.Default.CheckBox, null, tint = t.textPrimary)
                             }
                             IconButton(onClick = { viewModel.setViewMode(viewMode.next()) }) {
                                 Icon(
@@ -274,13 +277,13 @@ fun HomeScreen(
                                         ViewMode.LIST -> Icons.Default.ViewList
                                         ViewMode.GRID_2 -> Icons.Default.GridView
                                         ViewMode.GRID_3 -> Icons.Default.Apps
-                                    }, null, tint = Color(0xFF4A3728)
+                                    }, null, tint = t.textPrimary
                                 )
                             }
                             Box {
                                 var showMoreMenu by remember { mutableStateOf(false) }
                                 IconButton(onClick = { showMoreMenu = true }) {
-                                    Icon(Icons.Default.MoreVert, null, tint = Color(0xFF4A3728))
+                                    Icon(Icons.Default.MoreVert, null, tint = t.textPrimary)
                                 }
                                 DropdownMenu(expanded = showMoreMenu, onDismissRequest = { showMoreMenu = false }) {
                                     DropdownMenuItem(
@@ -299,20 +302,20 @@ fun HomeScreen(
                             }
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = BrownHeader)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = t.header)
                 )
             },
             floatingActionButton = {
                 if (listType != NoteListType.TRASH) {
                     FloatingActionButton(
                         onClick = { newNoteName = ""; showCreateDialog = true },
-                        containerColor = Accent, contentColor = Color.White
+                        containerColor = t.accent, contentColor = Color.White
                     ) { Icon(Icons.Default.Add, "Новая заметка") }
                 }
             },
             bottomBar = {
                 if (existingColors.size > 1) {
-                    Surface(color = DarkSurface, tonalElevation = 4.dp) {
+                    Surface(color = t.surface, tonalElevation = 4.dp) {
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)
                                 .horizontalScroll(rememberScrollState()),
@@ -322,17 +325,17 @@ fun HomeScreen(
                             // "All" chip
                             Box(
                                 Modifier.size(28.dp).clip(CircleShape)
-                                    .background(if (colorFilter == null) Accent else Color(0xFFCBC2B9))
+                                    .background(if (colorFilter == null) t.accent else t.bottomBarInactive)
                                     .clickable { colorFilter = null },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(Icons.Default.Circle, null, tint = Color(0xFFFAF6F1), modifier = Modifier.size(14.dp))
+                                Icon(Icons.Default.Circle, null, tint = t.background, modifier = Modifier.size(14.dp))
                             }
                             existingColors.forEach { c ->
                                 Box(
                                     Modifier.size(28.dp).clip(CircleShape)
                                         .background(c.color)
-                                        .then(if (c == colorFilter) Modifier.border(2.dp, Accent, CircleShape) else Modifier.border(1.dp, Color(0xFFCBC2B9), CircleShape))
+                                        .then(if (c == colorFilter) Modifier.border(2.dp, t.accent, CircleShape) else Modifier.border(1.dp, t.bottomBarInactive, CircleShape))
                                         .clickable { colorFilter = if (colorFilter == c) null else c }
                                 )
                             }
@@ -340,14 +343,14 @@ fun HomeScreen(
                     }
                 }
             },
-            containerColor = DarkBg
+            containerColor = t.background
         ) { padding ->
             if (filtered.isEmpty()) {
                 Box(Modifier.fillMaxSize().padding(padding), Alignment.Center) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(Icons.Outlined.Description, null, Modifier.size(64.dp), tint = Color(0xFFCBC2B9))
+                        Icon(Icons.Outlined.Description, null, Modifier.size(64.dp), tint = t.emptyIcon)
                         Spacer(Modifier.height(16.dp))
-                        Text("Нет заметок", fontSize = 18.sp, color = Color(0xFF8B7B6E))
+                        Text("Нет заметок", fontSize = 18.sp, color = t.textSecondary)
                     }
                 }
             } else {
@@ -375,7 +378,7 @@ fun HomeScreen(
                                         checked = isSelected,
                                         onCheckedChange = { onNoteClick(note) },
                                         modifier = Modifier.padding(start = 4.dp),
-                                        colors = CheckboxDefaults.colors(checkedColor = Accent, uncheckedColor = Color(0xFFB0A396))
+                                        colors = CheckboxDefaults.colors(checkedColor = t.accent, uncheckedColor = t.uncheckedBox)
                                     )
                                 }
                             }
@@ -394,7 +397,7 @@ fun HomeScreen(
                                             checked = isSelected,
                                             onCheckedChange = { onNoteClick(note) },
                                             modifier = Modifier.align(Alignment.TopEnd).padding(top = 2.dp, end = 0.dp).size(32.dp),
-                                            colors = CheckboxDefaults.colors(checkedColor = Accent, uncheckedColor = Color(0xFFB0A396))
+                                            colors = CheckboxDefaults.colors(checkedColor = t.accent, uncheckedColor = t.uncheckedBox)
                                         )
                                     }
                                 }

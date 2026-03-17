@@ -54,6 +54,14 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
     private val _openNoteAfterCreate = MutableStateFlow(prefs.getBoolean("open_note_after_create", false))
     val openNoteAfterCreate: StateFlow<Boolean> = _openNoteAfterCreate
 
+    private val _isDarkTheme = MutableStateFlow(prefs.getBoolean("is_dark_theme", false))
+    val isDarkTheme: StateFlow<Boolean> = _isDarkTheme
+
+    fun setDarkTheme(dark: Boolean) {
+        _isDarkTheme.value = dark
+        prefs.edit().putBoolean("is_dark_theme", dark).apply()
+    }
+
     fun loadNote(id: Long) {
         loadNoteJob?.cancel()
         _currentNote.value = null

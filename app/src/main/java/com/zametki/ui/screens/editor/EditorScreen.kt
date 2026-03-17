@@ -43,10 +43,7 @@ import androidx.core.content.FileProvider
 import com.zametki.R
 import com.zametki.data.*
 import com.zametki.ui.NoteViewModel
-import com.zametki.ui.components.Accent
-import com.zametki.ui.components.BrownHeader
-import com.zametki.ui.components.DarkBg
-import com.zametki.ui.components.DarkSurface
+import com.zametki.ui.components.*
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.json.JSONArray
@@ -94,6 +91,7 @@ data class UndoSnap(val text: String, val sel: TextRange, val formats: List<Char
 fun EditorScreen(
     viewModel: NoteViewModel,
     noteId: Long,
+    isDark: Boolean,
     onNavigateBack: () -> Unit,
     onNavigatePrev: () -> Unit,
     onNavigateNext: () -> Unit
@@ -188,15 +186,16 @@ fun EditorScreen(
 
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
+    val t = themeColors(isDark)
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {},
-                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Default.ArrowBack, null, tint = Color(0xFF4A3728)) } },
+                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Default.ArrowBack, null, tint = t.textPrimary) } },
                 actions = {
-                    IconButton(onClick = { undo() }) { Icon(Icons.Default.Undo, null, tint = Color(0xFF4A3728).copy(alpha = if (undoStack.isNotEmpty()) 1f else 0.3f)) }
-                    IconButton(onClick = { redo() }) { Icon(Icons.Default.Redo, null, tint = Color(0xFF4A3728).copy(alpha = if (redoStack.isNotEmpty()) 1f else 0.3f)) }
+                    IconButton(onClick = { undo() }) { Icon(Icons.Default.Undo, null, tint = t.textPrimary.copy(alpha = if (undoStack.isNotEmpty()) 1f else 0.3f)) }
+                    IconButton(onClick = { redo() }) { Icon(Icons.Default.Redo, null, tint = t.textPrimary.copy(alpha = if (redoStack.isNotEmpty()) 1f else 0.3f)) }
                     // YD button — same code as HomeScreen selection mode
                     IconButton(onClick = {
                         try {
@@ -239,55 +238,55 @@ fun EditorScreen(
                     IconButton(onClick = {
                         val intent = Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_SUBJECT, titleText); putExtra(Intent.EXTRA_TEXT, contentValue.text) }
                         context.startActivity(Intent.createChooser(intent, "Поделиться"))
-                    }) { Icon(Icons.Default.Share, null, tint = Color(0xFF4A3728)) }
+                    }) { Icon(Icons.Default.Share, null, tint = t.textPrimary) }
                     // Delete note button
                     IconButton(onClick = { showDeleteConfirm = true }) { Icon(Icons.Default.Delete, null, tint = Color(0xFFFF6B6B)) }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BrownHeader)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = t.header)
             )
         },
         bottomBar = {
-            Surface(color = DarkSurface, tonalElevation = 8.dp) {
+            Surface(color = t.surface, tonalElevation = 8.dp) {
                 Column {
                     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { toggleFmt({ it.bold }, { f, v -> f.copy(bold = v) }) }) {
                             Text("Ж", fontWeight = if (isBold) androidx.compose.ui.text.font.FontWeight.ExtraBold else androidx.compose.ui.text.font.FontWeight.Normal,
-                                fontSize = 18.sp, color = if (isBold) Accent else Color(0xFFB0A396))
+                                fontSize = 18.sp, color = if (isBold) t.accent else t.uncheckedBox)
                         }
                         IconButton(onClick = { toggleFmt({ it.italic }, { f, v -> f.copy(italic = v) }) }) {
                             Text("К", fontWeight = androidx.compose.ui.text.font.FontWeight.Normal,
-                                fontSize = 18.sp, color = if (isItalic) Accent else Color(0xFFB0A396),
+                                fontSize = 18.sp, color = if (isItalic) t.accent else t.uncheckedBox,
                                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
                         }
                         IconButton(onClick = { toggleFmt({ it.underline }, { f, v -> f.copy(underline = v) }) }) {
-                            Text("Ч", fontSize = 18.sp, color = if (isUnderline) Accent else Color(0xFFB0A396),
+                            Text("Ч", fontSize = 18.sp, color = if (isUnderline) t.accent else t.uncheckedBox,
                                 textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline)
                         }
                         Spacer(Modifier.width(4.dp))
                         // Font size
                         IconButton(onClick = { if (fontSize > 10) { fontSize--; formatVersion++ } }) {
-                            Text("A-", fontSize = 16.sp, color = Color(0xFF8B7B6E))
+                            Text("A-", fontSize = 16.sp, color = t.textSecondary)
                         }
-                        Text("${fontSize}", fontSize = 14.sp, color = Color(0xFF4A3728))
+                        Text("${fontSize}", fontSize = 14.sp, color = t.textPrimary)
                         IconButton(onClick = { if (fontSize < 30) { fontSize++; formatVersion++ } }) {
-                            Text("A+", fontSize = 16.sp, color = Color(0xFF8B7B6E))
+                            Text("A+", fontSize = 16.sp, color = t.textSecondary)
                         }
                         Spacer(Modifier.weight(1f))
                         // Sheet color
                         IconButton(onClick = { showColorSheet = !showColorSheet }) {
-                            Icon(Icons.Default.Palette, null, tint = Color(0xFF8B7B6E))
+                            Icon(Icons.Default.Palette, null, tint = t.textSecondary)
                         }
                     }
                     // Navigation prev/next
                     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
                         horizontalArrangement = Arrangement.SpaceBetween) {
-                        IconButton(onClick = onNavigatePrev) { Icon(Icons.Default.ChevronLeft, null, tint = Color(0xFF8B7B6E)) }
-                        IconButton(onClick = onNavigateNext) { Icon(Icons.Default.ChevronRight, null, tint = Color(0xFF8B7B6E)) }
+                        IconButton(onClick = onNavigatePrev) { Icon(Icons.Default.ChevronLeft, null, tint = t.textSecondary) }
+                        IconButton(onClick = onNavigateNext) { Icon(Icons.Default.ChevronRight, null, tint = t.textSecondary) }
                     }
                 }
             }
         },
-        containerColor = DarkBg
+        containerColor = t.background
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding).background(sheetBg).verticalScroll(scrollState)) {
             // Title
@@ -474,9 +473,8 @@ fun EditorScreen(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            containerColor = Color(0xFFF5F5F5),
-            title = { Text("Удалить заметку?", color = Color(0xFF333333)) },
-            text = { Text("Заметка будет перемещена в корзину.", color = Color(0xFF666666)) },
+            title = { Text("Удалить заметку?") },
+            text = { Text("Заметка будет перемещена в корзину.") },
             confirmButton = {
                 TextButton(onClick = {
                     showDeleteConfirm = false
@@ -485,7 +483,7 @@ fun EditorScreen(
                 }) { Text("Удалить", color = Color.Red) }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteConfirm = false }) { Text("Отмена", color = Color(0xFF666666)) }
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Отмена") }
             }
         )
     }
@@ -500,7 +498,7 @@ fun EditorScreen(
                     SheetColor.entries.forEach { c ->
                         Box(
                             Modifier.size(40.dp).clip(CircleShape).background(c.color)
-                                .then(if (c == sheetColor) Modifier.border(2.dp, Accent, CircleShape) else Modifier),
+                                .then(if (c == sheetColor) Modifier.border(2.dp, t.accent, CircleShape) else Modifier),
                             contentAlignment = Alignment.Center
                         ) {
                             IconButton(onClick = { sheetColor = c; showColorSheet = false }) {
