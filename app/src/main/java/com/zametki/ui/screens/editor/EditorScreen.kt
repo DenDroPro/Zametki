@@ -238,6 +238,11 @@ fun EditorScreen(
                         val intent = Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_SUBJECT, titleText); putExtra(Intent.EXTRA_TEXT, contentValue.text) }
                         context.startActivity(Intent.createChooser(intent, "Поделиться"))
                     }) { Icon(Icons.Default.Share, null, tint = Color.White) }
+                    // Delete note button
+                    IconButton(onClick = {
+                        viewModel.softDelete(noteId)
+                        onNavigateBack()
+                    }) { Icon(Icons.Default.Delete, null, tint = Color(0xFFFF6B6B)) }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = BrownHeader)
             )
