@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.FileProvider
@@ -151,8 +152,8 @@ fun HomeScreen(
                                 modifier = Modifier.fillMaxWidth())
                         } else {
                             Column {
-                                Text(title, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp)
-                                Text("${filtered.size} заметок", fontSize = 12.sp, color = Color.White.copy(alpha = 0.6f))
+                                Text(title, fontWeight = FontWeight.Bold, color = Color.White, fontSize = 18.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                Text("${filtered.size} заметок", fontSize = 12.sp, color = Color.White.copy(alpha = 0.6f), maxLines = 1)
                             }
                         }
                     },
@@ -258,12 +259,6 @@ fun HomeScreen(
                             IconButton(onClick = { showSearch = true }) {
                                 Icon(Icons.Default.Search, null, tint = Color.White)
                             }
-                            // Import .txt file button
-                            IconButton(onClick = {
-                                txtFilePicker.launch(arrayOf("text/plain", "text/*"))
-                            }) {
-                                Icon(Icons.Default.FileOpen, null, tint = Color.White)
-                            }
                             // Select files button
                             IconButton(onClick = {
                                 if (!selectionMode) {
@@ -283,14 +278,22 @@ fun HomeScreen(
                                 )
                             }
                             Box {
-                                IconButton(onClick = { showSortMenu = true }) {
-                                    Icon(Icons.Default.Sort, null, tint = Color.White)
+                                var showMoreMenu by remember { mutableStateOf(false) }
+                                IconButton(onClick = { showMoreMenu = true }) {
+                                    Icon(Icons.Default.MoreVert, null, tint = Color.White)
                                 }
-                                DropdownMenu(expanded = showSortMenu, onDismissRequest = { showSortMenu = false }) {
+                                DropdownMenu(expanded = showMoreMenu, onDismissRequest = { showMoreMenu = false }) {
+                                    DropdownMenuItem(
+                                        text = { Text("Загрузить файл") },
+                                        leadingIcon = { Icon(Icons.Default.FileOpen, null) },
+                                        onClick = { showMoreMenu = false; txtFilePicker.launch(arrayOf("text/plain", "text/*")) }
+                                    )
+                                    HorizontalDivider()
+                                    // Sort submenu
                                     SortMode.entries.forEach { m ->
                                         DropdownMenuItem(
                                             text = { Text(m.label, fontWeight = if (m == sortMode) FontWeight.Bold else FontWeight.Normal) },
-                                            onClick = { viewModel.setSortMode(m); showSortMenu = false })
+                                            onClick = { viewModel.setSortMode(m); showMoreMenu = false })
                                     }
                                 }
                             }
