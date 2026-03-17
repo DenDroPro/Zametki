@@ -3,6 +3,8 @@ package com.zametki.ui.screens.settings
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -55,6 +57,23 @@ fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
     var showClearTrash by remember { mutableStateOf(false) }
     var showColorPicker by remember { mutableStateOf(false) }
     var ydStatus by remember { mutableStateOf("") }
+
+    // JSON file picker for restore
+    val jsonFilePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            scope.launch {
+                try {
+                    val inputStream = context.contentResolver.openInputStream(uri)
+                    val json = inputStream?.bufferedReader()?.readText() ?: ""
+                    inputStream?.close()
+                    viewModel.importNotesFromJson(json)
+                    ydStatus = "Заметки восстановлены из бэкапа!"
+                } catch (e: Exception) {
+                    ydStatus = "Ошибка восстановления: ${e.message}"
+                }
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -171,8 +190,7 @@ fun SettingsScreen(viewModel: NoteViewModel, onNavigateBack: () -> Unit) {
             }
             // Restore — pick JSON file
             SettingsRow(Icons.Default.CloudDownload, "Восстановить из бэкапа", "Открыть JSON-файл бэкапа") {
-                // Will be handled via Activity result — for now just show info
-                ydStatus = "Восстановление пока не поддерживается"
+                jsonFilePicker.launch(arrayOf("application/json", "*/*"))
             }
             if (ydStatus.isNotBlank()) {
                 Text(ydStatus, fontSize = 13.sp, color = Color(0xFF888888),

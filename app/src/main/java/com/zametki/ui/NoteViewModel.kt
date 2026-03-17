@@ -74,6 +74,20 @@ class NoteViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun createNoteWithContent(title: String, content: String, onCreated: (Long) -> Unit = {}) {
+        viewModelScope.launch {
+            val id = dao.insert(Note(
+                title = title,
+                content = content,
+                preview = content.take(100),
+                sheetColor = _defaultSheetColor.value,
+                fontSize = _defaultFontSize.value,
+                lineOpacity = _defaultLineOpacity.value
+            ))
+            onCreated(id)
+        }
+    }
+
     fun duplicateNote(note: Note) {
         viewModelScope.launch {
             dao.insert(note.copy(

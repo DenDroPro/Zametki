@@ -3,6 +3,8 @@ package com.zametki.ui.screens.home
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -54,8 +56,37 @@ fun HomeScreen(
     onNavigateToSettings: () -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     val sortMode by viewModel.sortMode.collectAsState()
     val viewMode by viewModel.viewMode.collectAsState()
+
+    // File picker for importing .txt files
+    val txtFilePicker = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri != null) {
+            try {
+                val inputStream = context.contentResolver.openInputStream(uri)
+                val content = inputStream?.bufferedReader()?.readText() ?: ""
+                inputStream?.close()
+                // Extract file name without extension
+                var fileName = "Импорт"
+                context.contentResolver.query(uri, null, null, null, null)?.use { cursor ->
+                    if (cursor.moveToFirst()) {
+                        val nameIndex = cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)
+                        if (nameIndex >= 0) {
+                            val name = cursor.getString(nameIndex)
+                            fileName = name.substringBeforeLast(".")
+                        }
+                    }
+                }
+                viewModel.createNoteWithContent(fileName, content) { id ->
+                    if (viewModel.openNoteAfterCreate.value) onNavigateToEditor(id)
+                }
+                Toast.makeText(context, "Файл загружен: $fileName", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                Toast.makeText(context, "Ошибка загрузки: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
     val notesFlow = remember(listType) {
         when (listType) {
             NoteListType.ALL -> viewModel.allNotes
@@ -93,7 +124,6 @@ fun HomeScreen(
     }
 
     val drawerState = rememberDrawerState(DrawerValue.Closed)
-    val scope = rememberCoroutineScope()
     val drawerItem = when (listType) {
         NoteListType.ALL -> "all"; NoteListType.FAVORITES -> "favorites"
         NoteListType.PINNED -> "pinned"; NoteListType.TRASH -> "trash"
@@ -227,6 +257,12 @@ fun HomeScreen(
                         } else if (!showSearch) {
                             IconButton(onClick = { showSearch = true }) {
                                 Icon(Icons.Default.Search, null, tint = Color.White)
+                            }
+                            // Import .txt file button
+                            IconButton(onClick = {
+                                txtFilePicker.launch(arrayOf("text/plain", "text/*"))
+                            }) {
+                                Icon(Icons.Default.FileOpen, null, tint = Color.White)
                             }
                             // Select files button
                             IconButton(onClick = {
