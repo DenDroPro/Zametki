@@ -15,6 +15,7 @@ data class Note(
     val lineOpacity: Float = 0.15f,
     val isFavorite: Boolean = false,
     val isPinned: Boolean = false,
+    val pinOrder: Int = 0,
     val isDeleted: Boolean = false,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis()

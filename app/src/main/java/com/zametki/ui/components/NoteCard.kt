@@ -1,5 +1,6 @@
 package com.zametki.ui.components
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
@@ -12,6 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -26,6 +28,7 @@ import java.util.*
 fun NoteCard(note: Note, onClick: () -> Unit, onLongClick: () -> Unit) {
     val bgColor = note.sheetColor.color
     val textColor = note.sheetColor.textColor
+    val lineColor = note.sheetColor.lineColor
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -36,41 +39,55 @@ fun NoteCard(note: Note, onClick: () -> Unit, onLongClick: () -> Unit) {
         colors = CardDefaults.cardColors(containerColor = bgColor),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Box(modifier = Modifier.fillMaxSize().padding(10.dp)) {
-            Column(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            // Faint lined paper background
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val lineSpacing = 18.dp.toPx()
+                val titleAreaH = 38.dp.toPx()
+                // Faint content lines
+                var y = titleAreaH + lineSpacing
+                while (y < size.height) {
+                    drawLine(lineColor.copy(alpha = 0.15f), Offset(8.dp.toPx(), y), Offset(size.width - 8.dp.toPx(), y), strokeWidth = 0.5.dp.toPx())
+                    y += lineSpacing
+                }
+                // Title separator — more visible
+                drawLine(lineColor.copy(alpha = 0.4f), Offset(8.dp.toPx(), titleAreaH), Offset(size.width - 8.dp.toPx(), titleAreaH), strokeWidth = 0.8.dp.toPx())
+            }
+            Column(modifier = Modifier.fillMaxSize().padding(10.dp)) {
                 // Title
                 Text(
                     text = note.title.ifBlank { "Без заголовка" },
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp,
-                    maxLines = 2,
+                    maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     color = textColor
                 )
-                Spacer(Modifier.height(4.dp))
-                // Preview text
+                Spacer(Modifier.height(6.dp))
+                // Preview text — limited lines so date stays visible
                 Text(
                     text = note.preview.ifBlank { "" },
                     fontSize = 10.sp,
-                    maxLines = 8,
+                    maxLines = 6,
                     overflow = TextOverflow.Ellipsis,
                     color = textColor.copy(alpha = 0.7f),
-                    lineHeight = 14.sp
+                    lineHeight = 14.sp,
+                    modifier = Modifier.weight(1f, fill = true)
                 )
-            }
-            // Bottom row: date + icons
-            Row(
-                modifier = Modifier.align(Alignment.BottomStart).fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    SimpleDateFormat("dd.MM.yy", Locale.getDefault()).format(Date(note.updatedAt)),
-                    fontSize = 9.sp, color = textColor.copy(alpha = 0.5f)
-                )
-                Row {
-                    if (note.isPinned) Icon(Icons.Default.PushPin, null, tint = textColor.copy(alpha = 0.5f), modifier = Modifier.size(12.dp))
-                    if (note.isFavorite) Icon(Icons.Default.Favorite, null, tint = Color(0xFFE91E63).copy(alpha = 0.7f), modifier = Modifier.size(12.dp))
+                // Bottom row: date + icons — always at bottom
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        SimpleDateFormat("dd.MM.yy", Locale.getDefault()).format(Date(note.updatedAt)),
+                        fontSize = 9.sp, color = textColor.copy(alpha = 0.5f)
+                    )
+                    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                        if (note.isPinned) Icon(Icons.Default.PushPin, null, tint = textColor.copy(alpha = 0.5f), modifier = Modifier.size(12.dp))
+                        if (note.isFavorite) Icon(Icons.Default.Favorite, null, tint = Color(0xFFE91E63).copy(alpha = 0.7f), modifier = Modifier.size(12.dp))
+                    }
                 }
             }
         }

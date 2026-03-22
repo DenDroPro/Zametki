@@ -3,6 +3,7 @@ package com.zametki
 import android.app.Application
 import androidx.room.Room
 import com.zametki.data.AppDatabase
+import com.zametki.data.MIGRATION_1_2
 
 class ZametkiApplication : Application() {
     companion object {

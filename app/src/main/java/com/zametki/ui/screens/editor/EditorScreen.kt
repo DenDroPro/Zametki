@@ -1,6 +1,7 @@
 package com.zametki.ui.screens.editor
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextRange
@@ -24,7 +26,9 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import android.content.Intent
 import android.graphics.Canvas
+import android.graphics.Rect
 import android.graphics.Typeface
+import android.net.Uri
 import android.text.InputType
 import android.text.Spannable
 import android.text.TextWatcher
@@ -32,15 +36,19 @@ import android.text.style.StyleSpan
 import android.text.style.UnderlineSpan
 import android.util.TypedValue
 import android.view.Gravity
+import android.view.View
 import android.widget.EditText
+import android.widget.Toast
+import androidx.core.content.FileProvider
+import com.zametki.R
 import com.zametki.data.*
 import com.zametki.ui.NoteViewModel
-import com.zametki.ui.components.Accent
-import com.zametki.ui.components.BrownHeader
-import com.zametki.ui.components.DarkBg
+import com.zametki.ui.components.*
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.File
 
 data class CharFormat(val bold: Boolean = false, val italic: Boolean = false, val underline: Boolean = false)
 
@@ -83,6 +91,7 @@ data class UndoSnap(val text: String, val sel: TextRange, val formats: List<Char
 fun EditorScreen(
     viewModel: NoteViewModel,
     noteId: Long,
+    isDark: Boolean,
     onNavigateBack: () -> Unit,
     onNavigatePrev: () -> Unit,
     onNavigateNext: () -> Unit
@@ -135,17 +144,20 @@ fun EditorScreen(
         }
     }
 
-    // Save
+    // Save — only save if note.id matches the noteId we're editing
     LaunchedEffect(titleText, contentValue.text, sheetColor, fontSize, lineOpacity, formatVersion) {
         if (initialized) note?.let {
-            viewModel.saveNote(it.copy(title = titleText, content = contentValue.text, preview = contentValue.text.take(100),
-                formatting = serializeFormats(charFormats), sheetColor = sheetColor, fontSize = fontSize, lineOpacity = lineOpacity))
+            if (it.id == noteId) {
+                viewModel.saveNote(it.copy(title = titleText, content = contentValue.text, preview = contentValue.text.take(100),
+                    formatting = serializeFormats(charFormats), sheetColor = sheetColor, fontSize = fontSize, lineOpacity = lineOpacity))
+            }
         }
     }
 
     var editTextRef by remember { mutableStateOf<EditText?>(null) }
     var isUpdatingFromCompose by remember { mutableStateOf(false) }
     var showColorSheet by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
 
     val isBold = run {
         val s = contentValue.selection
@@ -172,66 +184,111 @@ fun EditorScreen(
     val textColorArgb = sheetColor.textColor.toArgb()
     val lineColorArgb = sheetColor.lineColor.toArgb()
 
+    val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
+    val t = themeColors(isDark)
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = {},
-                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Default.ArrowBack, null, tint = Color.White) } },
+                navigationIcon = { IconButton(onClick = onNavigateBack) { Icon(Icons.Default.ArrowBack, null, tint = t.textPrimary) } },
                 actions = {
-                    IconButton(onClick = { undo() }) { Icon(Icons.Default.Undo, null, tint = Color.White.copy(alpha = if (undoStack.isNotEmpty()) 1f else 0.3f)) }
-                    IconButton(onClick = { redo() }) { Icon(Icons.Default.Redo, null, tint = Color.White.copy(alpha = if (redoStack.isNotEmpty()) 1f else 0.3f)) }
+                    IconButton(onClick = { undo() }) { Icon(Icons.Default.Undo, null, tint = t.textPrimary.copy(alpha = if (undoStack.isNotEmpty()) 1f else 0.3f)) }
+                    IconButton(onClick = { redo() }) { Icon(Icons.Default.Redo, null, tint = t.textPrimary.copy(alpha = if (redoStack.isNotEmpty()) 1f else 0.3f)) }
+                    // YD button — same code as HomeScreen selection mode
+                    IconButton(onClick = {
+                        try {
+                            val name = titleText.ifBlank { "Без названия" }.replace(Regex("[/\\\\:*?\"<>|]"), "_")
+                            val cacheDir = File(context.cacheDir, "shared_notes")
+                            cacheDir.mkdirs()
+                            val file = File(cacheDir, "$name.txt")
+                            file.writeText(contentValue.text)
+                            val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                            val uris = ArrayList<Uri>()
+                            uris.add(uri)
+                            val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                                type = "text/plain"
+                                putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                setPackage("ru.yandex.disk")
+                            }
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            try {
+                                val name = titleText.ifBlank { "Без названия" }.replace(Regex("[/\\\\:*?\"<>|]"), "_")
+                                val cacheDir = File(context.cacheDir, "shared_notes")
+                                cacheDir.mkdirs()
+                                val file = File(cacheDir, "$name.txt")
+                                file.writeText(contentValue.text)
+                                val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+                                val uris = ArrayList<Uri>()
+                                uris.add(uri)
+                                val intent = Intent(Intent.ACTION_SEND_MULTIPLE).apply {
+                                    type = "text/plain"
+                                    putParcelableArrayListExtra(Intent.EXTRA_STREAM, uris)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                }
+                                context.startActivity(Intent.createChooser(intent, "Поделиться"))
+                            } catch (_: Exception) {
+                                Toast.makeText(context, "Не удалось поделиться", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }) { Icon(painterResource(R.drawable.ic_yandex_disk), null, tint = Color.Unspecified, modifier = Modifier.size(24.dp)) }
                     IconButton(onClick = {
                         val intent = Intent(Intent.ACTION_SEND).apply { type = "text/plain"; putExtra(Intent.EXTRA_SUBJECT, titleText); putExtra(Intent.EXTRA_TEXT, contentValue.text) }
                         context.startActivity(Intent.createChooser(intent, "Поделиться"))
-                    }) { Icon(Icons.Default.Share, null, tint = Color.White) }
+                    }) { Icon(Icons.Default.Share, null, tint = t.textPrimary) }
+                    // Delete note button
+                    IconButton(onClick = { showDeleteConfirm = true }) { Icon(Icons.Default.Delete, null, tint = Color(0xFFFF6B6B)) }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = BrownHeader)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = t.header)
             )
         },
         bottomBar = {
-            Surface(color = Color(0xFF2A2A2A), tonalElevation = 8.dp) {
+            Surface(color = t.surface, tonalElevation = 8.dp) {
                 Column {
                     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 2.dp), verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = { toggleFmt({ it.bold }, { f, v -> f.copy(bold = v) }) }) {
                             Text("Ж", fontWeight = if (isBold) androidx.compose.ui.text.font.FontWeight.ExtraBold else androidx.compose.ui.text.font.FontWeight.Normal,
-                                fontSize = 18.sp, color = if (isBold) Accent else Color(0xFFBBBBBB))
+                                fontSize = 18.sp, color = if (isBold) t.accent else t.uncheckedBox)
                         }
                         IconButton(onClick = { toggleFmt({ it.italic }, { f, v -> f.copy(italic = v) }) }) {
                             Text("К", fontWeight = androidx.compose.ui.text.font.FontWeight.Normal,
-                                fontSize = 18.sp, color = if (isItalic) Accent else Color(0xFFBBBBBB),
+                                fontSize = 18.sp, color = if (isItalic) t.accent else t.uncheckedBox,
                                 fontStyle = androidx.compose.ui.text.font.FontStyle.Italic)
                         }
                         IconButton(onClick = { toggleFmt({ it.underline }, { f, v -> f.copy(underline = v) }) }) {
-                            Text("Ч", fontSize = 18.sp, color = if (isUnderline) Accent else Color(0xFFBBBBBB),
+                            Text("Ч", fontSize = 18.sp, color = if (isUnderline) t.accent else t.uncheckedBox,
                                 textDecoration = androidx.compose.ui.text.style.TextDecoration.Underline)
                         }
                         Spacer(Modifier.width(4.dp))
                         // Font size
                         IconButton(onClick = { if (fontSize > 10) { fontSize--; formatVersion++ } }) {
-                            Text("A-", fontSize = 16.sp, color = Color(0xFFBBBBBB))
+                            Text("A-", fontSize = 16.sp, color = t.textSecondary)
                         }
-                        Text("${fontSize}", fontSize = 14.sp, color = Color(0xFFDDDDDD))
+                        Text("${fontSize}", fontSize = 14.sp, color = t.textPrimary)
                         IconButton(onClick = { if (fontSize < 30) { fontSize++; formatVersion++ } }) {
-                            Text("A+", fontSize = 16.sp, color = Color(0xFFBBBBBB))
+                            Text("A+", fontSize = 16.sp, color = t.textSecondary)
                         }
                         Spacer(Modifier.weight(1f))
                         // Sheet color
                         IconButton(onClick = { showColorSheet = !showColorSheet }) {
-                            Icon(Icons.Default.Palette, null, tint = Color(0xFFBBBBBB))
+                            Icon(Icons.Default.Palette, null, tint = t.textSecondary)
                         }
                     }
                     // Navigation prev/next
                     Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 2.dp),
                         horizontalArrangement = Arrangement.SpaceBetween) {
-                        IconButton(onClick = onNavigatePrev) { Icon(Icons.Default.ChevronLeft, null, tint = Color(0xFF888888)) }
-                        IconButton(onClick = onNavigateNext) { Icon(Icons.Default.ChevronRight, null, tint = Color(0xFF888888)) }
+                        IconButton(onClick = onNavigatePrev) { Icon(Icons.Default.ChevronLeft, null, tint = t.textSecondary) }
+                        IconButton(onClick = onNavigateNext) { Icon(Icons.Default.ChevronRight, null, tint = t.textSecondary) }
                     }
                 }
             }
         },
-        containerColor = DarkBg
+        containerColor = t.background
     ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding).background(sheetBg).verticalScroll(rememberScrollState())) {
+        Column(modifier = Modifier.fillMaxSize().padding(padding).background(sheetBg).verticalScroll(scrollState)) {
             // Title
             val titleColor = sheetColor.textColor
             androidx.compose.foundation.text.BasicTextField(
@@ -240,6 +297,9 @@ fun EditorScreen(
                     fontSize = 20.sp, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                     color = titleColor
                 ),
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    capitalization = androidx.compose.ui.text.input.KeyboardCapitalization.Sentences
+                ),
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 15.dp, vertical = 12.dp),
                 decorationBox = { inner ->
                     if (titleText.isEmpty()) Text("Заголовок", fontSize = 20.sp, color = titleColor.copy(alpha = 0.3f),
@@ -247,7 +307,7 @@ fun EditorScreen(
                     inner()
                 }
             )
-            HorizontalDivider(color = sheetColor.lineColor, thickness = 0.5.dp, modifier = Modifier.padding(horizontal = 15.dp))
+            HorizontalDivider(color = sheetColor.lineColor.copy(alpha = 0.6f), thickness = 1.5.dp, modifier = Modifier.padding(horizontal = 15.dp))
 
             // Content — Native EditText
             val curFontSize = fontSize
@@ -293,6 +353,33 @@ fun EditorScreen(
                             if (!isUpdatingFromCompose) {
                                 val t = text?.toString() ?: ""
                                 contentValue = TextFieldValue(t, TextRange(selStart.coerceIn(0, t.length), selEnd.coerceIn(0, t.length)))
+                            }
+                            // Request scroll to cursor position — use getLocationInWindow for accuracy
+                            post {
+                                val layout = layout ?: return@post
+                                val len = text?.length ?: 0
+                                val safeSel = selStart.coerceIn(0, len)
+                                val line = layout.getLineForOffset(safeSel)
+                                val lineBottom = layout.getLineBottom(line)
+                                // Get EditText position on screen
+                                val loc = IntArray(2)
+                                getLocationInWindow(loc)
+                                val editTextWindowY = loc[1]
+                                val cursorWindowY = editTextWindowY + lineBottom
+                                // Get actual visible area (keyboard-aware)
+                                val visibleRect = Rect()
+                                rootView.getWindowVisibleDisplayFrame(visibleRect)
+                                val visibleBottom = visibleRect.bottom
+                                // Bottom bar (formatting + arrows) is ~110dp
+                                val bottomBarPx = (110 * resources.displayMetrics.density).toInt()
+                                val marginPx = (40 * resources.displayMetrics.density).toInt()
+                                val threshold = visibleBottom - bottomBarPx - marginPx
+                                if (cursorWindowY > threshold) {
+                                    val scrollBy = cursorWindowY - threshold
+                                    coroutineScope.launch {
+                                        scrollState.animateScrollTo(scrollState.value + scrollBy)
+                                    }
+                                }
                             }
                         }
                     }.apply {
@@ -382,35 +469,40 @@ fun EditorScreen(
         }
     }
 
+    // Delete confirmation dialog
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Удалить заметку?") },
+            text = { Text("Заметка будет перемещена в корзину.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showDeleteConfirm = false
+                    viewModel.softDelete(noteId)
+                    onNavigateBack()
+                }) { Text("Удалить", color = Color.Red) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Отмена") }
+            }
+        )
+    }
+
     // Sheet color picker
     if (showColorSheet) {
         AlertDialog(
             onDismissRequest = { showColorSheet = false },
             title = { Text("Цвет листа") },
             text = {
-                Column {
-                    Text("Пастельные", fontSize = 12.sp, color = Color(0xFF888888))
-                    Spacer(Modifier.height(4.dp))
-                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        (listOf(SheetColor.WHITE) + SheetColor.entries.filter { it.name.startsWith("PASTEL") }).forEach { c ->
-                            Box(Modifier.size(40.dp).clip(CircleShape).background(c.color).then(
-                                if (c == sheetColor) Modifier.background(Color.Transparent) else Modifier
-                            )) {
-                                IconButton(onClick = { sheetColor = c; showColorSheet = false }) {
-                                    if (c == sheetColor) Icon(Icons.Default.Check, null, tint = c.textColor, modifier = Modifier.size(18.dp))
-                                }
-                            }
-                        }
-                    }
-                    Spacer(Modifier.height(12.dp))
-                    Text("Яркие", fontSize = 12.sp, color = Color(0xFF888888))
-                    Spacer(Modifier.height(4.dp))
-                    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        SheetColor.entries.filter { it.name.startsWith("VIBRANT") }.forEach { c ->
-                            Box(Modifier.size(40.dp).clip(CircleShape).background(c.color)) {
-                                IconButton(onClick = { sheetColor = c; showColorSheet = false }) {
-                                    if (c == sheetColor) Icon(Icons.Default.Check, null, tint = Color.White, modifier = Modifier.size(18.dp))
-                                }
+                Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SheetColor.entries.forEach { c ->
+                        Box(
+                            Modifier.size(40.dp).clip(CircleShape).background(c.color)
+                                .then(if (c == sheetColor) Modifier.border(2.dp, t.accent, CircleShape) else Modifier),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            IconButton(onClick = { sheetColor = c; showColorSheet = false }) {
+                                if (c == sheetColor) Icon(Icons.Default.Check, null, tint = c.textColor, modifier = Modifier.size(18.dp))
                             }
                         }
                     }

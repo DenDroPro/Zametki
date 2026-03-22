@@ -3,34 +3,16 @@ package com.zametki.data
 import androidx.compose.ui.graphics.Color
 
 enum class SheetColor(val color: Color, val label: String) {
-    // Default
-    WHITE(Color(0xFFFFFDF5), "Белый"),
-    // Pastel (10)
-    PASTEL_PINK(Color(0xFFFFF0F5), "Розовый"),
-    PASTEL_PEACH(Color(0xFFFFF5EE), "Персиковый"),
-    PASTEL_YELLOW(Color(0xFFFFFDE7), "Жёлтый"),
-    PASTEL_MINT(Color(0xFFF0FFF0), "Мятный"),
-    PASTEL_BLUE(Color(0xFFF0F8FF), "Голубой"),
-    PASTEL_LAVENDER(Color(0xFFF5F0FF), "Лавандовый"),
-    PASTEL_CREAM(Color(0xFFFFFDD0), "Кремовый"),
-    PASTEL_SAGE(Color(0xFFE8F5E9), "Шалфей"),
-    PASTEL_SKY(Color(0xFFE1F5FE), "Небесный"),
-    PASTEL_CORAL(Color(0xFFFFE4E1), "Коралловый"),
-    // Vibrant (10)
-    VIBRANT_RED(Color(0xFFEF5350), "Красный"),
-    VIBRANT_ORANGE(Color(0xFFFF7043), "Оранжевый"),
-    VIBRANT_YELLOW(Color(0xFFFFEE58), "Жёлтый"),
-    VIBRANT_GREEN(Color(0xFF66BB6A), "Зелёный"),
-    VIBRANT_TEAL(Color(0xFF26A69A), "Бирюзовый"),
-    VIBRANT_BLUE(Color(0xFF42A5F5), "Синий"),
-    VIBRANT_INDIGO(Color(0xFF5C6BC0), "Индиго"),
-    VIBRANT_PURPLE(Color(0xFFAB47BC), "Фиолетовый"),
-    VIBRANT_PINK(Color(0xFFEC407A), "Розовый"),
-    VIBRANT_BROWN(Color(0xFF8D6E63), "Коричневый");
+    WHITE(Color(0xFFFFFDF6), "Белый"),
+    GREEN(Color(0xFF9DD1A1), "Зелёный"),
+    BLUE(Color(0xFFB3E5FC), "Голубой"),
+    PEACH(Color(0xFFFFAB91), "Персиковый"),
+    PURPLE(Color(0xFFCFAEE3), "Сиреневый"),
+    YELLOW(Color(0xFFE6DC97), "Жёлтый"),
+    KRAFT(Color(0xFF998564), "Крафт");
 
-    val isDark: Boolean get() = name.startsWith("VIBRANT")
-    val textColor: Color get() = if (isDark) Color.White else Color(0xFF333333)
-    val lineColor: Color get() = if (isDark) Color.White.copy(alpha = 0.3f) else Color.Black.copy(alpha = 0.15f)
+    val textColor: Color get() = if (this == KRAFT) Color(0xFFFFFFFF) else Color(0xFF333333)
+    val lineColor: Color get() = if (this == KRAFT) Color(0xFFBBA882).copy(alpha = 0.3f) else Color(0xFF8B7355).copy(alpha = 0.2f)
 }
 
 enum class SortMode(val label: String) {
@@ -43,8 +25,12 @@ enum class SortMode(val label: String) {
     COLOR("По цвету")
 }
 
-enum class ViewMode(val label: String) {
-    LIST("Список"),
-    GRID_3("Сетка 3"),
-    GRID_4("Сетка 4")
+enum class ViewMode {
+    LIST, GRID_2, GRID_3;
+
+    fun next(): ViewMode = when (this) {
+        LIST -> GRID_2
+        GRID_2 -> GRID_3
+        GRID_3 -> LIST
+    }
 }
